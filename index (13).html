@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Maps — TCAT en direct</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="map"></main>
+
+  <!-- Barre Liquid Glass flottante -->
+  <nav class="liquid-nav" id="nav">
+    <div class="liquid-glare-container"><div class="liquid-glare" id="glare"></div></div>
+
+    <div class="nav-brand">
+      <span class="brand-mark">NEXUS</span><span class="brand-sub">MAPS</span>
+    </div>
+
+    <div class="nav-items" id="navItems">
+      <div class="active-pill" id="activePill"></div>
+      <button class="nav-btn active" data-tab="map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        <span>Carte</span>
+      </button>
+      <button class="nav-btn" data-tab="lines">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Lignes</span>
+      </button>
+      <button class="nav-btn" data-tab="route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V9a4 4 0 0 1 4-4h4"/><path d="M18 8v7a4 4 0 0 1-4 4h-4"/></svg>
+        <span>Itinéraire</span>
+      </button>
+    </div>
+
+    <div class="nav-meta">
+      <div class="clock-block">
+        <div id="clock" class="clock">--:--:--</div>
+        <div class="clock-label"><span class="dot"></span><span id="activeCount">0</span> bus</div>
+      </div>
+      <button class="theme-btn" id="themeBtn" aria-label="Basculer le thème">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Panneau Lignes -->
+  <section class="panel-card" id="panelLines">
+    <div class="panel-head">
+      <h2>Lignes</h2>
+      <div class="line-controls">
+        <button class="mini-btn" id="allLines">Tout</button>
+        <button class="mini-btn" id="noLines">Aucune</button>
+      </div>
+    </div>
+    <div id="lineList" class="line-list"></div>
+    <div class="panel-foot">
+      <label class="ctrl-row"><span>Vitesse du temps</span><span class="ctrl-val" id="speedVal">×1</span></label>
+      <input type="range" id="speed" min="0" max="6" step="1" value="1">
+      <button class="mini-btn wide" id="liveBtn">Revenir à maintenant</button>
+      <p class="disclaimer">Positions <strong>estimées</strong> d'après les horaires théoriques, pas un GPS.</p>
+    </div>
+  </section>
+
+  <!-- Panneau Itinéraire -->
+  <section class="panel-card" id="panelRoute">
+    <div class="panel-head"><h2>Itinéraire</h2></div>
+    <div class="route-modes" id="routeModes">
+      <button class="mode-btn active" data-mode="walk" aria-label="À pied">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"/><path d="M15 7l-3 2-2 4 3 2 1 5"/><path d="M10 13l-3 1-1 4"/><path d="M12 9l3 1 2 3"/></svg>
+        <span>Piéton</span>
+      </button>
+      <button class="mode-btn" data-mode="bike" aria-label="À vélo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 17.5L9 9l3-1.5 3 4h3"/></svg>
+        <span>Vélo</span>
+      </button>
+      <button class="mode-btn" data-mode="car" aria-label="En voiture">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/></svg>
+        <span>Voiture</span>
+      </button>
+    </div>
+
+    <div class="route-field">
+      <label>Départ</label>
+      <input type="text" id="fromInput" placeholder="Adresse, lieu…" autocomplete="off">
+      <div class="geo-results" id="fromResults"></div>
+    </div>
+    <div class="route-field">
+      <label>Arrivée</label>
+      <input type="text" id="toInput" placeholder="Adresse, lieu…" autocomplete="off">
+      <div class="geo-results" id="toResults"></div>
+    </div>
+
+    <button class="route-go" id="routeGo">Calculer l'itinéraire</button>
+    <div class="route-result" id="routeResult"></div>
+  </section>
+
+  <div id="loader" class="loader">
+    <div class="loader-mark">NEXUS</div>
+    <div class="loader-bar"><span></span></div>
+    <div class="loader-text" id="loaderText">Chargement du réseau…</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="config.js"></script>
+  <script src="engine.js"></script>
+  <script src="routing.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
