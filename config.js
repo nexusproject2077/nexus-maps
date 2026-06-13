@@ -11,7 +11,7 @@
 
 const NEXUS_CONFIG = {
   // Colle ta clé OpenRouteService ici, entre les guillemets :
-  ORS_KEY: "COLLE_TA_CLE_ICI",
+  ORS_KEY: "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVlMGQ4ZmVkNGU4OTRiNDVhMTY4ZTc1MGQwMzMwNjVjIiwiaCI6Im11cm11cjY0In0=",
 
   // Centre de la carte (Troyes) et zoom par défaut
   CENTER: [48.2973, 4.0744],
