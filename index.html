@@ -30,6 +30,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span>Couches</span>
       </button>
+      <button class="nav-btn" data-tab="saved" title="Favoris">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>Favoris</span>
+      </button>
     </div>
     <div class="nav-meta">
       <button class="theme-btn" id="themeBtn" title="Thème">
@@ -52,6 +56,30 @@
     <div class="route-field"><label>Arrivée</label><input type="text" id="toInput" placeholder="Adresse, lieu…" autocomplete="off"><div class="geo-results" id="toResults"></div></div>
     <button class="route-go" id="routeGo">Calculer l'itinéraire</button>
     <div class="route-result" id="routeResult"></div>
+    <div class="route-steps" id="routeSteps"></div>
+  </section>
+
+  <!-- Panneau Favoris -->
+  <section class="panel-card" id="panelSaved">
+    <div class="panel-head"><h2>Favoris</h2></div>
+    <div class="layer-section">
+      <h3>Enregistrer un lieu</h3>
+      <div class="route-field" style="padding:0">
+        <input type="text" id="favInput" placeholder="Chercher un lieu à enregistrer…" autocomplete="off">
+        <div class="geo-results" id="favResults"></div>
+      </div>
+    </div>
+    <div class="layer-section">
+      <h3>Mes lieux enregistrés</h3>
+      <div id="favList" class="fav-list"></div>
+    </div>
+    <div class="layer-section">
+      <h3>Mes signalements</h3>
+      <p class="hint">Clique <strong>n'importe où sur la carte</strong> en mode signalement pour marquer un problème.</p>
+      <button class="mini-btn wide" id="reportToggle">Activer le mode signalement</button>
+      <div id="reportList" class="fav-list"></div>
+    </div>
+    <p class="disclaimer">Favoris et signalements sont stockés <strong>uniquement sur ton appareil</strong> (localStorage). Rien n'est envoyé à un serveur : ils ne se perdent pas et restent privés.</p>
   </section>
 
   <!-- Panneau Couches -->
@@ -93,9 +121,10 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="config.js?v=7"></script>
-  <script src="busengine.js?v=7"></script>
-  <script src="routing.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <script src="config.js?v=8"></script>
+  <script src="store.js?v=8"></script>
+  <script src="busengine.js?v=8"></script>
+  <script src="routing.js?v=8"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
