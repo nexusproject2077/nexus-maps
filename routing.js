@@ -1,28 +1,27 @@
 /* ============================================================
-   Nexus Maps — Routage (Version B blindée : appel direct ORS)
+   Nexus Maps — Routage (Version B blindée v2)
    ------------------------------------------------------------
-   - Lit la clé FRAÎCHEMENT à chaque appel (pas de capture figée).
-   - En cas d'erreur, remonte la VRAIE réponse d'ORS.
+   CORRECTIF : on lit NEXUS_CONFIG directement (pas via window.),
+   car `const NEXUS_CONFIG` ne crée PAS de propriété sur window.
+   C'était la cause du faux "clé absente".
    ============================================================ */
 
 const NexusRouting = (() => {
   const BASE = "https://api.openrouteservice.org";
   const PROFILES = { walk: "foot-walking", bike: "cycling-regular", car: "driving-car" };
 
+  function cfg() {
+    return (typeof NEXUS_CONFIG !== "undefined") ? NEXUS_CONFIG : {};
+  }
   function getKey() {
-    // lecture au moment de l'appel, pas au chargement du script
-    const cfg = window.NEXUS_CONFIG || {};
-    const k = (cfg.ORS_KEY || "").trim();
+    const k = ((cfg().ORS_KEY) || "").trim();
     if (!k || k === "COLLE_TA_CLE_ICI") {
       throw new Error("Clé absente dans config.js (NEXUS_CONFIG.ORS_KEY vide).");
     }
     return k;
   }
-
   function getBbox() {
-    const b = (window.NEXUS_CONFIG && NEXUS_CONFIG.GEOCODE_BBOX) ||
-              { minLon: 3.5, minLat: 47.9, maxLon: 4.6, maxLat: 48.7 };
-    return b;
+    return cfg().GEOCODE_BBOX || { minLon: 3.5, minLat: 47.9, maxLon: 4.6, maxLat: 48.7 };
   }
 
   async function geocode(text) {
