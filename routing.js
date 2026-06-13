@@ -1,21 +1,13 @@
 /* ============================================================
-   Nexus Maps — Routage (OpenRouteService)
+   Nexus Maps — Routage (Version B : appel direct OpenRouteService)
    ------------------------------------------------------------
-   - Géocodage : nom d'adresse -> coordonnées (Pelias, inclus dans ORS)
-   - Itinéraire : 3 profils
-       walk  -> foot-walking   (uniquement voies marchables)
-       bike  -> cycling-regular (privilégie pistes cyclables)
-       car   -> driving-car
-   Tout passe par la clé gratuite définie dans config.js.
+   Appelle ORS directement avec la clé de config.js.
+   ⚠️ La clé transite dans le navigateur (visible). Test perso.
    ============================================================ */
 
 const NexusRouting = (() => {
   const BASE = "https://api.openrouteservice.org";
-  const PROFILES = {
-    walk: "foot-walking",
-    bike: "cycling-regular",
-    car: "driving-car",
-  };
+  const PROFILES = { walk: "foot-walking", bike: "cycling-regular", car: "driving-car" };
 
   function key() {
     const k = (window.NEXUS_CONFIG && NEXUS_CONFIG.ORS_KEY) || "";
@@ -25,7 +17,6 @@ const NexusRouting = (() => {
     return k;
   }
 
-  /* --- Géocodage : texte -> liste de lieux {label, lat, lon} --- */
   async function geocode(text) {
     const bbox = NEXUS_CONFIG.GEOCODE_BBOX;
     const url = new URL(BASE + "/geocode/search");
@@ -37,9 +28,12 @@ const NexusRouting = (() => {
     url.searchParams.set("boundary.rect.max_lat", bbox.maxLat);
     url.searchParams.set("size", "5");
     url.searchParams.set("lang", "fr");
-
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Géocodage : HTTP " + res.status);
+    if (!res.ok) {
+      let m = "HTTP " + res.status;
+      try { const e = await res.json(); if (e.error) m = e.error.message || e.error; } catch {}
+      throw new Error("Géocodage : " + m);
+    }
     const data = await res.json();
     return (data.features || []).map((f) => ({
       label: f.properties.label,
@@ -48,48 +42,30 @@ const NexusRouting = (() => {
     }));
   }
 
-  /* --- Itinéraire entre deux points {lat,lon} pour un mode --- */
   async function route(from, to, mode) {
     const profile = PROFILES[mode];
     if (!profile) throw new Error("Mode inconnu : " + mode);
-
     const url = BASE + "/v2/directions/" + profile + "/geojson";
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Authorization": key(),
-        "Content-Type": "application/json",
-      },
+      headers: { "Authorization": key(), "Content-Type": "application/json" },
       body: JSON.stringify({
-        // ORS attend [lon, lat]
         coordinates: [[from.lon, from.lat], [to.lon, to.lat]],
-        instructions: true,
-        language: "fr",
+        instructions: true, language: "fr",
       }),
     });
     if (!res.ok) {
-      let msg = "HTTP " + res.status;
-      try { const e = await res.json(); if (e.error) msg = e.error.message || msg; } catch {}
-      throw new Error("Itinéraire : " + msg);
+      let m = "HTTP " + res.status;
+      try { const e = await res.json(); if (e.error) m = e.error.message || e.error; } catch {}
+      throw new Error("Itinéraire : " + m);
     }
     const data = await res.json();
     const feat = data.features && data.features[0];
     if (!feat) throw new Error("Aucun itinéraire trouvé.");
-
-    const coords = feat.geometry.coordinates.map((c) => [c[1], c[0]]); // -> [lat,lon]
-    const summary = feat.properties.summary || {};
-    const steps =
-      (feat.properties.segments || [])
-        .flatMap((s) => s.steps || [])
-        .map((st) => ({ instruction: st.instruction, distance: st.distance }));
-
-    return {
-      coords,
-      distance: summary.distance || 0, // mètres
-      duration: summary.duration || 0, // secondes
-      steps,
-    };
+    const coords = feat.geometry.coordinates.map((c) => [c[1], c[0]]);
+    const s = feat.properties.summary || {};
+    return { coords, distance: s.distance || 0, duration: s.duration || 0 };
   }
 
-  return { geocode, route, PROFILES };
+  return { geocode, route };
 })();
