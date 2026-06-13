@@ -1,9 +1,8 @@
 /* ============================================================
    Nexus Maps — Configuration (Version B : appel direct ORS)
    ------------------------------------------------------------
-   ⚠️ Ta clé est visible par tout le monde dans ce fichier.
-      OK pour un test perso. Si tu partages l'app publiquement,
-      repasse en Version A (relais VPS) pour cacher la clé.
+   ⚠️ Clé visible publiquement dans ce fichier. OK pour test perso.
+      Pour un usage public, repasse en relais VPS (version A).
    ============================================================ */
 
 const NEXUS_CONFIG = {
