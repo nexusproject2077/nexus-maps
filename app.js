@@ -180,7 +180,7 @@
   // ===== Nav liquid glass =====
   const pill=$('#activePill');
   function movePill(btn){pill.style.width=btn.offsetWidth+'px';pill.style.transform=`translateX(${btn.offsetLeft}px)`;}
-  const panels={route:$('#panelRoute'),layers:$('#panelLayers')};
+  const panels={route:$('#panelRoute'),layers:$('#panelLayers'),saved:$('#panelSaved')};
   function openTab(tab){
     $$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
     const btn=document.querySelector(`.nav-btn[data-tab="${tab}"]`); if(btn)movePill(btn);
@@ -245,6 +245,7 @@
           {type:'Feature',properties:{color:'#fff'},geometry:{type:'Point',coordinates:[r.alight.lon,r.alight.lat]}},
         ];
         if(coords.length) drawRoute(coords.map(c=>[c[1],c[0]]),pts);
+        $('#routeSteps').innerHTML='';
         const via = r.type==='correspondance'?`<div class="bi-row"><span>Correspondance</span><b>${r.via.name}</b></div>`:'';
         out.innerHTML=`<div style="margin:8px 0">${lineInfo}</div>
           <div class="bi-row"><span>Monter à</span><b>${r.board.name}</b></div>${via}
@@ -259,9 +260,86 @@
         drawRoute(r.coords,pts);
         const lbl={walk:'à pied',bike:'à vélo',car:'en voiture'}[currentMode];
         out.innerHTML=`<div class="route-stat"><div class="rs"><b>${fmtD(r.distance)}</b><span>distance</span></div><div class="rs"><b>${fmtT(r.duration)}</b><span>durée ${lbl}</span></div></div>`;
+        const stepsBox=$('#routeSteps');
+        if(r.steps && r.steps.length){
+          stepsBox.innerHTML='<h3 class="steps-title">Étapes</h3>'+r.steps.map(s=>
+            `<div class="step-item"><span class="step-txt">${s.instruction}</span><span class="step-dist">${fmtD(s.distance)}</span></div>`).join('');
+        } else stepsBox.innerHTML='';
       }
     }catch(err){out.innerHTML=`<div class="route-err">${err.message}</div>`;}
   };
+
+  // ===== Favoris & Signalements =====
+  let favMarkers=[], reportMarkers=[], reportMode=false;
+
+  function renderFavMarkers(){
+    favMarkers.forEach(m=>m.remove()); favMarkers=[];
+    NexusStore.getFavorites().forEach(f=>{
+      const el=document.createElement('div'); el.className='fav-marker';
+      el.innerHTML='<svg viewBox="0 0 24 24" fill="#00e5ff" stroke="#fff" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+      const m=new maplibregl.Marker({element:el}).setLngLat([f.lon,f.lat])
+        .setPopup(new maplibregl.Popup({offset:18}).setText(f.name)).addTo(map);
+      favMarkers.push(m);
+    });
+  }
+  function renderReportMarkers(){
+    reportMarkers.forEach(m=>m.remove()); reportMarkers=[];
+    NexusStore.getReports().forEach(r=>{
+      const el=document.createElement('div'); el.className='report-marker';
+      el.innerHTML='<svg viewBox="0 0 24 24" fill="#ffb627" stroke="#04141a" stroke-width="1.5"><path d="M12 2L2 20h20z"/><line x1="12" y1="9" x2="12" y2="14" stroke="#04141a" stroke-width="2"/><circle cx="12" cy="17" r="1" fill="#04141a"/></svg>';
+      const m=new maplibregl.Marker({element:el}).setLngLat([r.lon,r.lat])
+        .setPopup(new maplibregl.Popup({offset:18}).setText(r.comment||'Problème signalé')).addTo(map);
+      reportMarkers.push(m);
+    });
+  }
+  function renderFavList(){
+    const box=$('#favList'), favs=NexusStore.getFavorites();
+    box.innerHTML = favs.length ? '' : '<p class="hint">Aucun lieu enregistré.</p>';
+    favs.forEach(f=>{
+      const d=document.createElement('div'); d.className='fav-row';
+      d.innerHTML=`<span class="fav-name">${f.name}</span><button class="fav-del" title="Supprimer">×</button>`;
+      d.querySelector('.fav-name').onclick=()=>map.flyTo({center:[f.lon,f.lat],zoom:16,pitch:NEXUS_CONFIG.PITCH});
+      d.querySelector('.fav-del').onclick=()=>{NexusStore.removeFavorite(f.id);renderFavList();renderFavMarkers();};
+      box.appendChild(d);
+    });
+  }
+  function renderReportList(){
+    const box=$('#reportList'), reps=NexusStore.getReports();
+    box.innerHTML = reps.length ? '' : '';
+    reps.forEach(r=>{
+      const d=document.createElement('div'); d.className='fav-row';
+      d.innerHTML=`<span class="fav-name">⚠ ${r.comment||'Problème'}</span><button class="fav-del">×</button>`;
+      d.querySelector('.fav-name').onclick=()=>map.flyTo({center:[r.lon,r.lat],zoom:16});
+      d.querySelector('.fav-del').onclick=()=>{NexusStore.removeReport(r.id);renderReportList();renderReportMarkers();};
+      box.appendChild(d);
+    });
+  }
+
+  // recherche pour enregistrer un favori
+  setupGeo('#favInput','#favResults',(p)=>{
+    const name = $('#favInput').value;
+    NexusStore.addFavorite({name, lat:p.lat, lon:p.lon});
+    $('#favInput').value='';
+    renderFavList(); renderFavMarkers();
+    map.flyTo({center:[p.lon,p.lat],zoom:15});
+  });
+
+  // mode signalement : clic sur la carte
+  $('#reportToggle').onclick=()=>{
+    reportMode=!reportMode;
+    $('#reportToggle').textContent = reportMode ? 'Mode signalement ACTIF — clique la carte' : 'Activer le mode signalement';
+    $('#reportToggle').classList.toggle('active-report', reportMode);
+    map.getCanvas().style.cursor = reportMode ? 'crosshair' : '';
+  };
+  map.on('click',(e)=>{
+    if(!reportMode) return;
+    const comment = prompt("Décris le problème (ex : arrêt déplacé, rue fermée) :");
+    if(comment===null) return;
+    NexusStore.addReport({lat:e.lngLat.lat, lon:e.lngLat.lng, comment, date:Date.now()});
+    renderReportList(); renderReportMarkers();
+  });
+
+  renderFavList(); renderFavMarkers(); renderReportList(); renderReportMarkers();
 
   // ---- Lancement ----
   openTab('explore');
