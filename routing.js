@@ -1,26 +1,34 @@
 /* ============================================================
-   Nexus Maps — Routage (Version B : appel direct OpenRouteService)
+   Nexus Maps — Routage (Version B blindée : appel direct ORS)
    ------------------------------------------------------------
-   Appelle ORS directement avec la clé de config.js.
-   ⚠️ La clé transite dans le navigateur (visible). Test perso.
+   - Lit la clé FRAÎCHEMENT à chaque appel (pas de capture figée).
+   - En cas d'erreur, remonte la VRAIE réponse d'ORS.
    ============================================================ */
 
 const NexusRouting = (() => {
   const BASE = "https://api.openrouteservice.org";
   const PROFILES = { walk: "foot-walking", bike: "cycling-regular", car: "driving-car" };
 
-  function key() {
-    const k = (window.NEXUS_CONFIG && NEXUS_CONFIG.ORS_KEY) || "";
+  function getKey() {
+    // lecture au moment de l'appel, pas au chargement du script
+    const cfg = window.NEXUS_CONFIG || {};
+    const k = (cfg.ORS_KEY || "").trim();
     if (!k || k === "COLLE_TA_CLE_ICI") {
-      throw new Error("Clé OpenRouteService manquante : renseigne ORS_KEY dans config.js.");
+      throw new Error("Clé absente dans config.js (NEXUS_CONFIG.ORS_KEY vide).");
     }
     return k;
   }
 
+  function getBbox() {
+    const b = (window.NEXUS_CONFIG && NEXUS_CONFIG.GEOCODE_BBOX) ||
+              { minLon: 3.5, minLat: 47.9, maxLon: 4.6, maxLat: 48.7 };
+    return b;
+  }
+
   async function geocode(text) {
-    const bbox = NEXUS_CONFIG.GEOCODE_BBOX;
+    const bbox = getBbox();
     const url = new URL(BASE + "/geocode/search");
-    url.searchParams.set("api_key", key());
+    url.searchParams.set("api_key", getKey());
     url.searchParams.set("text", text);
     url.searchParams.set("boundary.rect.min_lon", bbox.minLon);
     url.searchParams.set("boundary.rect.min_lat", bbox.minLat);
@@ -30,9 +38,8 @@ const NexusRouting = (() => {
     url.searchParams.set("lang", "fr");
     const res = await fetch(url);
     if (!res.ok) {
-      let m = "HTTP " + res.status;
-      try { const e = await res.json(); if (e.error) m = e.error.message || e.error; } catch {}
-      throw new Error("Géocodage : " + m);
+      const body = await res.text().catch(() => "");
+      throw new Error("Géocodage ORS " + res.status + " : " + body.slice(0, 200));
     }
     const data = await res.json();
     return (data.features || []).map((f) => ({
@@ -45,19 +52,17 @@ const NexusRouting = (() => {
   async function route(from, to, mode) {
     const profile = PROFILES[mode];
     if (!profile) throw new Error("Mode inconnu : " + mode);
-    const url = BASE + "/v2/directions/" + profile + "/geojson";
-    const res = await fetch(url, {
+    const res = await fetch(BASE + "/v2/directions/" + profile + "/geojson", {
       method: "POST",
-      headers: { "Authorization": key(), "Content-Type": "application/json" },
+      headers: { "Authorization": getKey(), "Content-Type": "application/json" },
       body: JSON.stringify({
         coordinates: [[from.lon, from.lat], [to.lon, to.lat]],
-        instructions: true, language: "fr",
+        instructions: false, language: "fr",
       }),
     });
     if (!res.ok) {
-      let m = "HTTP " + res.status;
-      try { const e = await res.json(); if (e.error) m = e.error.message || e.error; } catch {}
-      throw new Error("Itinéraire : " + m);
+      const body = await res.text().catch(() => "");
+      throw new Error("Itinéraire ORS " + res.status + " : " + body.slice(0, 200));
     }
     const data = await res.json();
     const feat = data.features && data.features[0];
