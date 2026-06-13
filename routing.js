@@ -9,17 +9,16 @@ const NexusRouting = (() => {
   function getKey(){ const k=((cfg().ORS_KEY)||"").trim();
     if(!k||k==="COLLE_TA_CLE_ICI") throw new Error("Clé absente dans config.js.");
     return k; }
-  function getBbox(){ return cfg().GEOCODE_BBOX||{minLon:3.5,minLat:47.9,maxLon:4.6,maxLat:48.7}; }
-
   async function geocode(text){
-    const b=getBbox(),url=new URL(BASE+"/geocode/search");
+    const c=cfg(), url=new URL(BASE+"/geocode/search");
     url.searchParams.set("api_key",getKey());
     url.searchParams.set("text",text);
-    url.searchParams.set("boundary.rect.min_lon",b.minLon);
-    url.searchParams.set("boundary.rect.min_lat",b.minLat);
-    url.searchParams.set("boundary.rect.max_lon",b.maxLon);
-    url.searchParams.set("boundary.rect.max_lat",b.maxLat);
-    url.searchParams.set("size","5"); url.searchParams.set("lang","fr");
+    // France entière, résultats proches de Troyes priorisés
+    url.searchParams.set("boundary.country", c.GEOCODE_COUNTRY || "FR");
+    const f = c.GEOCODE_FOCUS || {lat:48.2973,lon:4.0744};
+    url.searchParams.set("focus.point.lat", f.lat);
+    url.searchParams.set("focus.point.lon", f.lon);
+    url.searchParams.set("size","8"); url.searchParams.set("lang","fr");
     const res=await fetch(url);
     if(!res.ok){const t=await res.text().catch(()=> ""); throw new Error("Géocodage ORS "+res.status+" : "+t.slice(0,150));}
     const data=await res.json();
