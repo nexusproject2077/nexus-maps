@@ -145,12 +145,66 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 @keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
 .loader-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim)}
 
+/* ============================================================
+   Responsive — optimisé pour chaque appareil
+   - safe-area (encoches), tablette, mobile (bottom sheets)
+   ============================================================ */
+:root{
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
+}
+.liquid-nav{top:calc(14px + var(--safe-t))}
+.compass-btn,.map-fab{right:calc(10px + var(--safe-r))}
+
+/* Tablette */
+@media(max-width:1024px){
+  .panel-card{width:300px}
+}
+
+/* Mobile : nav compacte + panneaux en bottom sheet */
 @media(max-width:760px){
-  .liquid-nav{gap:8px;padding:6px 10px;top:8px}
+  .liquid-nav{gap:6px;padding:6px 10px;top:calc(8px + var(--safe-t));max-width:calc(100vw - 16px)}
   .nav-brand,.nav-btn span{display:none}
+  .nav-btn{padding:9px}
+  .nav-btn svg{width:20px;height:20px}
+
+  /* Panneaux : feuilles qui montent du bas */
+  .panel-card{
+    top:auto;bottom:0;left:0;right:0;width:100%;max-width:none;max-height:82vh;
+    border-radius:22px 22px 0 0;border-left:none;border-right:none;border-bottom:none;
+    transform:translateY(103%) scale(1);transform-origin:bottom center;
+    transition:transform .44s cubic-bezier(.34,1.4,.45,1),opacity .3s;
+    padding-bottom:calc(10px + var(--safe-b));
+    box-shadow:0 -16px 44px -16px rgba(0,0,0,.6)}
+  .panel-card.open{transform:translateY(0)}
+  .panel-head{padding-top:20px}
+  .panel-head::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:42px;height:4px;border-radius:2px;background:var(--text-faint);opacity:.55}
+
+  /* Champs et cibles tactiles plus grands */
+  .route-field input,.search-wrap input{font-size:16px}     /* évite le zoom iOS */
+  .nav-btn,.mode-btn,.base-btn,.cat-btn,.pa-btn{min-height:44px}
+  .toggle-row{padding:11px 0}
+
+  /* Cartes flottantes pleines largeur */
+  .place-card{left:8px;right:8px;width:auto;bottom:calc(8px + var(--safe-b))}
+  .nav-guide{left:8px;right:8px;width:auto;top:calc(8px + var(--safe-t))}
+  .compass-btn{bottom:calc(118px + var(--safe-b))}
+  .map-fab{bottom:calc(164px + var(--safe-b))}
+}
+
+/* Très petits écrans */
+@media(max-width:380px){
+  .liquid-nav{gap:3px;padding:5px 8px}
   .nav-btn{padding:8px}
-  .panel-card{left:8px;right:8px;width:auto;top:66px}
-  .compass-btn{bottom:160px}
+  .route-modes{gap:5px}
+  .mode-btn{min-width:0}
+}
+
+/* Écrans bas (paysage mobile) */
+@media(max-height:480px){
+  .panel-card{max-height:88vh}
+  .compass-btn,.map-fab{display:none}
 }
 @media(prefers-reduced-motion:reduce){.active-pill,.panel-card{transition:none}.liquid-nav{backdrop-filter:blur(10px)}}
 
@@ -333,11 +387,6 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .toggle-row input{transition:background .25s cubic-bezier(.34,1.56,.5,1),border-color .25s}
 .toggle-row input::after{transition:transform .3s cubic-bezier(.34,1.56,.5,1),background .25s}
 
-@media(max-width:760px){
-  .place-card{bottom:8px}
-  .nav-guide{top:8px}
-  .map-fab{bottom:206px}
-}
 @media(prefers-reduced-motion:reduce){
   *,*::after,*::before{animation:none!important}
   .panel-card,.place-card,.nav-guide{transition:opacity .2s!important}

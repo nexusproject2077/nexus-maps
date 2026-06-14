@@ -218,6 +218,7 @@
     $$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
     const btn=document.querySelector(`.nav-btn[data-tab="${tab}"]`); if(btn)movePill(btn);
     Object.entries(panels).forEach(([k,p])=>p.classList.toggle('open',k===tab));
+    if(typeof closePlaceCard==='function') closePlaceCard();
   }
   $$('.nav-btn').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
   requestAnimationFrame(()=>movePill(document.querySelector('.nav-btn.active')));
