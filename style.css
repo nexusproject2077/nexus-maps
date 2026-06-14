@@ -10,6 +10,9 @@
   --glass-caustic:rgba(0,0,0,.04);--reflection:rgba(255,255,255,.65);--glare:rgba(255,255,255,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* Scrollbars masquées partout (scroll conservé) */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{width:0;height:0;display:none}
 html,body{height:100%}
 body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
 #map{position:fixed;inset:0}
@@ -51,8 +54,17 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .panel-card{position:fixed;top:84px;left:14px;width:310px;max-height:calc(100vh - 110px);background:var(--panel-bg);
   backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
   border:1px solid var(--line);border-radius:16px;z-index:900;display:flex;flex-direction:column;overflow-y:auto;
-  box-shadow:0 20px 50px -20px rgba(0,0,0,.5);opacity:0;transform:translateX(-12px);pointer-events:none;transition:opacity .25s,transform .25s}
-.panel-card.open{opacity:1;transform:translateX(0);pointer-events:auto}
+  box-shadow:0 20px 50px -20px rgba(0,0,0,.5);opacity:0;transform:translateX(-18px) scale(.97);transform-origin:top left;pointer-events:none;
+  transition:opacity .3s ease,transform .45s cubic-bezier(.34,1.56,.5,1)}
+.panel-card.open{opacity:1;transform:none;pointer-events:auto}
+/* Apparition en cascade des sections */
+.panel-card.open>*{animation:secIn .5s cubic-bezier(.22,1,.36,1) both}
+.panel-card.open>*:nth-child(2){animation-delay:.04s}
+.panel-card.open>*:nth-child(3){animation-delay:.08s}
+.panel-card.open>*:nth-child(4){animation-delay:.12s}
+.panel-card.open>*:nth-child(5){animation-delay:.16s}
+.panel-card.open>*:nth-child(6){animation-delay:.2s}
+@keyframes secIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-bg);z-index:2}
 .panel-head h2{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:500}
 
@@ -243,8 +255,65 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
   box-shadow:0 12px 30px -10px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* ============================================================
+   Animations & finitions pro
+   ============================================================ */
+/* Pression tactile sur les éléments interactifs */
+.nav-btn,.mode-btn,.base-btn,.cat-btn,.mini-btn,.pa-btn,.route-go,.nav-start,.theme-btn,.compass-btn,.map-fab,.fav-del,.place-close,.ng-exit,.search-clear{
+  transition:transform .18s cubic-bezier(.34,1.56,.5,1),color .2s,background .2s,border-color .2s,filter .2s,box-shadow .2s}
+.nav-btn:active,.mode-btn:active,.base-btn:active,.cat-btn:active,.mini-btn:active,.pa-btn:active,.route-go:active,.nav-start:active,.theme-btn:active,.compass-btn:active,.map-fab:active,.fav-del:active,.place-close:active,.ng-exit:active,.search-clear:active{transform:scale(.93)}
+.route-go:hover,.nav-start:hover{transform:translateY(-1px);box-shadow:0 8px 20px -8px var(--cyan)}
+.pa-btn:hover{transform:translateY(-2px)}
+.base-btn:hover,.cat-btn:hover,.mode-btn:hover{transform:translateY(-1px)}
+.compass-btn:hover,.map-fab:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}
+
+/* Icône active dans la nav : léger ressort */
+.nav-btn svg{transition:transform .35s cubic-bezier(.34,1.56,.5,1)}
+.nav-btn.active svg{transform:scale(1.12)}
+.theme-btn:hover svg{transform:scale(1.08)}
+
+/* Résultats de recherche : glissement au survol */
+.geo-item{transition:background .15s,color .15s,padding-left .15s}
+.geo-results.inline .geo-item:hover{padding-left:14px}
+.line-item{transition:background .12s,transform .12s}
+.line-item:active{transform:scale(.98)}
+.fav-row{transition:transform .15s,border-color .15s}
+.fav-row:hover{border-color:var(--cyan-dim)}
+
+/* Apparition des marqueurs (sur le SVG, pour ne pas gêner le positionnement) */
+.fav-marker svg,.report-marker svg{transform-origin:50% 100%;animation:markerPop .45s cubic-bezier(.34,1.56,.5,1) both}
+@keyframes markerPop{from{opacity:0;transform:translateY(8px) scale(.3)}to{opacity:1;transform:none}}
+
+/* Point utilisateur : halo pulsé */
+.user-dot{position:relative}
+.user-dot::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--cyan);
+  animation:userPulse 2s ease-out infinite;pointer-events:none}
+@keyframes userPulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.9);opacity:0}}
+
+/* Bouton « Démarrer » : reflet animé */
+.nav-start{position:relative;overflow:hidden}
+.nav-start::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%,60%{left:-60%}80%,100%{left:140%}}
+
+/* Bandeau de navigation : icône de manœuvre qui « tombe » à chaque maj */
+.ng-ico svg{animation:ngPop .4s cubic-bezier(.34,1.56,.5,1)}
+@keyframes ngPop{from{opacity:.2;transform:translateY(-6px) scale(.8)}to{opacity:1;transform:none}}
+
+/* Loader : pulsation du logo */
+.loader-mark{animation:markPulse 2s ease-in-out infinite}
+@keyframes markPulse{0%,100%{opacity:.85;text-shadow:0 0 24px rgba(0,229,255,.45)}50%{opacity:1;text-shadow:0 0 40px rgba(0,229,255,.8)}}
+
+/* Toggles plus doux */
+.toggle-row input{transition:background .25s cubic-bezier(.34,1.56,.5,1),border-color .25s}
+.toggle-row input::after{transition:transform .3s cubic-bezier(.34,1.56,.5,1),background .25s}
+
 @media(max-width:760px){
   .place-card{bottom:8px}
   .nav-guide{top:8px}
   .map-fab{bottom:206px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::after,*::before{animation:none!important}
+  .panel-card,.place-card,.nav-guide{transition:opacity .2s!important}
 }

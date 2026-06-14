@@ -43,8 +43,24 @@
   const state = { stops:false, lines:false, buses:false, cycle:false, b3d:true };
   let activeRoutes = new Set(Object.keys(NexusBus.routes));
 
+  // ===== Projection globe 3D + atmosphère =====
+  function applyGlobe(){
+    try{ if(map.setProjection) map.setProjection({type:'globe'}); }catch(e){}
+    const dark=document.documentElement.getAttribute('data-theme')!=='light';
+    try{ if(map.setSky) map.setSky(dark?{
+      'sky-color':'#0a1726','horizon-color':'#103044','fog-color':'#0a0e14',
+      'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.5,
+      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,8,0.6,12,0]
+    }:{
+      'sky-color':'#bfe3ff','horizon-color':'#e8f4ff','fog-color':'#eef4fb',
+      'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.5,
+      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,8,0.6,12,0]
+    }); }catch(e){}
+  }
+
   // ===== Ajout des couches data après chargement du style =====
   function addDataLayers(){
+    applyGlobe();
     // --- Bâtiments 3D (sur fond vectoriel uniquement) ---
     if((currentBase==='plan') && state.b3d && !map.getLayer('nexus-3d-buildings')){
       const layers=map.getStyle().layers;
