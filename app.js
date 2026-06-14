@@ -43,18 +43,15 @@
   const state = { stops:false, lines:false, buses:false, cycle:false, b3d:true };
   let activeRoutes = new Set(Object.keys(NexusBus.routes));
 
-  // ===== Projection globe 3D + atmosphère =====
+  // ===== Projection globe 3D + atmosphère (ciel transparent pour voir l'espace) =====
   function applyGlobe(){
     try{ if(map.setProjection) map.setProjection({type:'globe'}); }catch(e){}
-    const dark=document.documentElement.getAttribute('data-theme')!=='light';
-    try{ if(map.setSky) map.setSky(dark?{
-      'sky-color':'#0a1726','horizon-color':'#103044','fog-color':'#0a0e14',
-      'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.5,
-      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,8,0.6,12,0]
-    }:{
-      'sky-color':'#bfe3ff','horizon-color':'#e8f4ff','fog-color':'#eef4fb',
-      'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.5,
-      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,8,0.6,12,0]
+    try{ if(map.setSky) map.setSky({
+      // espace transparent -> la scène spatiale (étoiles/planètes) apparaît autour du globe
+      'sky-color':'rgba(0,0,0,0)','horizon-color':'rgba(0,0,0,0)','fog-color':'rgba(0,0,0,0)',
+      'sky-horizon-blend':0,'horizon-fog-blend':0,'fog-ground-blend':0,
+      // fin liseré d'atmosphère sur le bord du globe, qui s'estompe en zoomant
+      'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.85,5,0.4,9,0]
     }); }catch(e){}
   }
 
@@ -144,6 +141,18 @@
   }
 
   map.on('load', addDataLayers);
+
+  // ===== Scène spatiale au dézoom =====
+  const spaceEl=document.getElementById('space');
+  function updateSpace(){
+    const z=map.getZoom();
+    let o=(5-z)/(5-2.5); o=Math.max(0,Math.min(1,o)); // 1 quand z<=2.5, 0 quand z>=5
+    if(spaceEl) spaceEl.style.opacity=o;
+    if(window.NexusSpace) NexusSpace.setVisible(o>0.01);
+  }
+  map.on('zoom',updateSpace);
+  map.on('load',updateSpace);
+  updateSpace();
 
   // ===== Changement de fond =====
   function switchBase(base){

@@ -14,8 +14,14 @@
 *{scrollbar-width:none;-ms-overflow-style:none}
 *::-webkit-scrollbar{width:0;height:0;display:none}
 html,body{height:100%}
-body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
-#map{position:fixed;inset:0}
+body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;background:#04070e}
+#map{position:fixed;inset:0;background:transparent}
+.maplibregl-map,.maplibregl-canvas{background:transparent!important}
+/* Scène spatiale (derrière la carte, visible au dézoom) */
+#space{position:fixed;inset:0;z-index:-1;opacity:0;transition:opacity .9s ease;pointer-events:none;
+  background:radial-gradient(ellipse at 28% 18%,#0c1a3a 0%,#070d20 45%,#03040a 100%)}
+#space.show{opacity:1}
+#spaceCanvas{display:block;width:100%;height:100%}
 .maplibregl-ctrl-attrib{font-size:10px!important}
 
 /* ===== Liquid glass nav ===== */
@@ -98,11 +104,12 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .mode-btn svg{width:22px;height:22px}
 .mode-btn:hover{border-color:var(--cyan-dim);color:var(--text)}
 .mode-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.08)}
-.route-field{padding:0 16px 12px;position:relative}
+.route-field{padding:0 16px 12px;position:relative;z-index:1}
+.route-field:focus-within{z-index:50}
 .route-field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px}
 .route-field input{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--elev);color:var(--text);font-family:inherit;font-size:13px;outline:none}
 .route-field input:focus{border-color:var(--cyan)}
-.geo-results{position:absolute;left:16px;right:16px;top:100%;margin-top:-6px;z-index:5;background:var(--elev);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:none}
+.geo-results{position:absolute;left:16px;right:16px;top:100%;margin-top:-6px;z-index:50;background:var(--elev);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:none;box-shadow:0 14px 32px -12px rgba(0,0,0,.6)}
 .geo-results.show{display:block}
 .geo-item{padding:8px 11px;font-size:12px;cursor:pointer;color:var(--text-dim)}
 .geo-item:hover{background:var(--panel-bg);color:var(--text)}
