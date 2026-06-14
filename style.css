@@ -104,7 +104,10 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .bi-line{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;border-radius:5px;font-weight:700;font-size:12px;font-family:'JetBrains Mono',monospace;padding:0 6px}
 .bi-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);padding:4px 0}
 .bi-row b{color:var(--text)}
-.bi-est{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--amber)}
+.bi-sep{display:inline-flex;align-items:center;color:var(--text-faint);vertical-align:middle;margin:0 2px}
+.bi-sep svg{width:14px;height:14px}
+.bi-est{display:flex;align-items:flex-start;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--amber);line-height:1.4}
+.bi-est svg{width:14px;height:14px;flex-shrink:0;margin-top:1px}
 .route-err{color:var(--amber);font-size:12px;padding:10px 0;line-height:1.5}
 .disclaimer{font-size:11px;line-height:1.5;color:var(--text-faint);padding:14px 16px}
 .disclaimer strong{color:var(--amber)}
@@ -141,10 +144,14 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .fav-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--elev);border:1px solid var(--line);border-radius:8px}
 .fav-name{font-size:13px;color:var(--text);cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fav-name:hover{color:var(--cyan)}
-.fav-del{background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;line-height:1;padding:0 4px}
-.fav-del:hover{color:var(--amber)}
-.fav-marker,.report-marker{width:28px;height:28px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
-.fav-marker svg,.report-marker svg{width:28px;height:28px}
+.fav-name.report-name{display:flex;align-items:center;gap:6px}
+.fav-name.report-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.i-warn-sm{width:14px;height:14px;flex-shrink:0;color:var(--amber)}
+.fav-del{display:flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text-faint);cursor:pointer;line-height:1;padding:2px;border-radius:6px;transition:color .15s,background .15s}
+.fav-del svg{width:16px;height:16px}
+.fav-del:hover{color:var(--amber);background:rgba(255,182,39,.12)}
+.fav-marker,.report-marker{width:30px;height:41px;cursor:pointer;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+.fav-marker svg,.report-marker svg{width:30px;height:41px;display:block}
 .route-steps{padding:0 16px 16px}
 .steps-title{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);margin:6px 0 10px;font-weight:500}
 .step-item{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}

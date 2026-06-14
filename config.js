@@ -1,6 +1,6 @@
 /* ============================================================
    Nexus Maps — Configuration
-   ⚠️ Clé ORS visible publiquement ici (test perso). Pour un usage
+   [!] Clé ORS visible publiquement ici (test perso). Pour un usage
       public, passe par un relais VPS (voir vps/ors-proxy.php).
    ============================================================ */
 const NEXUS_CONFIG = {
