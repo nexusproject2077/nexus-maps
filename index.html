@@ -43,6 +43,34 @@
     </div>
   </nav>
 
+  <!-- Panneau Explorer / Recherche -->
+  <section class="panel-card" id="panelExplore">
+    <div class="panel-head"><h2>Explorer</h2></div>
+    <div class="search-wrap">
+      <span class="search-ico" id="searchIco"></span>
+      <input type="text" id="searchInput" placeholder="Rechercher un lieu, une adresse…" autocomplete="off">
+      <button class="search-clear" id="searchClear" title="Effacer" aria-label="Effacer"></button>
+    </div>
+    <div class="geo-results inline" id="searchResults"></div>
+    <div class="layer-section">
+      <h3>Catégories</h3>
+      <div class="cat-grid" id="catGrid">
+        <button class="cat-btn" data-q="restaurant">Restaurants</button>
+        <button class="cat-btn" data-q="café">Cafés</button>
+        <button class="cat-btn" data-q="supermarché">Courses</button>
+        <button class="cat-btn" data-q="pharmacie">Pharmacies</button>
+        <button class="cat-btn" data-q="station essence">Essence</button>
+        <button class="cat-btn" data-q="hôtel">Hôtels</button>
+        <button class="cat-btn" data-q="parking">Parkings</button>
+        <button class="cat-btn" data-q="hôpital">Santé</button>
+      </div>
+    </div>
+    <div class="layer-section" id="recentSection" style="display:none">
+      <h3>Recherches récentes</h3>
+      <div id="recentList" class="fav-list"></div>
+    </div>
+  </section>
+
   <!-- Panneau Itinéraire -->
   <section class="panel-card" id="panelRoute">
     <div class="panel-head"><h2>Itinéraire</h2></div>
@@ -109,10 +137,42 @@
     <p class="disclaimer">Trafic temps réel indisponible (aucune source gratuite). Bus = positions <strong>estimées</strong> des horaires théoriques.</p>
   </section>
 
-  <!-- Boussole / reset pitch -->
+  <!-- Boutons flottants droite -->
+  <button class="map-fab" id="locateBtn" title="Ma position" aria-label="Ma position"></button>
   <button class="compass-btn" id="compassBtn" title="Réinitialiser l'orientation">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 11 12 9 9 11 12 2"/><line x1="12" y1="12" x2="12" y2="22"/></svg>
   </button>
+
+  <!-- Fiche lieu (bottom sheet) -->
+  <section class="place-card" id="placeCard">
+    <button class="place-close" id="placeClose" aria-label="Fermer"></button>
+    <div class="place-body">
+      <h3 id="placeName">Lieu</h3>
+      <p id="placeSub" class="place-sub"></p>
+      <p id="placeCoords" class="place-coords"></p>
+    </div>
+    <div class="place-actions">
+      <button class="pa-btn primary" id="paDir"><span class="pa-ico" id="paDirIco"></span><span>Itinéraire</span></button>
+      <button class="pa-btn" id="paFrom"><span class="pa-ico" id="paFromIco"></span><span>Départ</span></button>
+      <button class="pa-btn" id="paSave"><span class="pa-ico" id="paSaveIco"></span><span>Enregistrer</span></button>
+      <button class="pa-btn" id="paShare"><span class="pa-ico" id="paShareIco"></span><span>Partager</span></button>
+      <button class="pa-btn" id="paStreet"><span class="pa-ico" id="paStreetIco"></span><span>Photos rue</span></button>
+    </div>
+  </section>
+
+  <!-- Navigation turn-by-turn -->
+  <section class="nav-guide" id="navGuide">
+    <div class="ng-top">
+      <span class="ng-ico" id="ngIco"></span>
+      <div class="ng-text"><div class="ng-dist" id="ngDist">—</div><div class="ng-instr" id="ngInstr">Calcul…</div></div>
+      <button class="ng-exit" id="ngExit" aria-label="Quitter">Quitter</button>
+    </div>
+    <div class="ng-bottom">
+      <div class="ng-stat"><b id="ngEta">—</b><span>arrivée</span></div>
+      <div class="ng-stat"><b id="ngRemain">—</b><span>restant</span></div>
+      <div class="ng-stat"><b id="ngNext">—</b><span>durée</span></div>
+    </div>
+  </section>
 
   <div id="loader" class="loader">
     <div class="loader-mark">NEXUS</div>
