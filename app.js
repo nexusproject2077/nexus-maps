@@ -94,7 +94,7 @@
     // --- Source arrêts ---
     if(!map.getSource('bus-stops')){
       map.addSource('bus-stops',{type:'geojson',data:{type:'FeatureCollection',
-        features:NexusBus.stops.map(s=>({type:'Feature',properties:{name:s.name},geometry:{type:'Point',coordinates:[s.lon,s.lat]}}))}});
+        features:NexusBus.stops.map(s=>({type:'Feature',properties:{name:s.name,id:s.id},geometry:{type:'Point',coordinates:[s.lon,s.lat]}}))}});
       map.addLayer({id:'bus-stops',type:'circle',source:'bus-stops',
         layout:{visibility:'none'},
         paint:{'circle-radius':['interpolate',['linear'],['zoom'],11,2,16,5],
@@ -167,10 +167,18 @@
     });
   }
 
-  // ===== Animation des bus =====
+  // ===== Animation des bus (positions GPS réelles si dispo, sinon estimées) =====
   let simTime=new Date(), lastFrame=performance.now();
+  function liveBuses(){ return NexusRT.hasVehicles() && NexusRT.isFresh(); }
+  function renderRealVehicles(){
+    if(!state.buses) return; const src=map.getSource('buses'); if(!src) return;
+    const veh=NexusRT.vehicles().filter(v=>!v.routeId || activeRoutes.has(v.routeId));
+    src.setData({type:'FeatureCollection',features:veh.map(v=>({type:'Feature',
+      properties:{color:(NexusBus.routes[v.routeId]||{}).color||'#00e5ff'},
+      geometry:{type:'Point',coordinates:[v.lon,v.lat]}}))});
+  }
   function animate(now){
-    if(state.buses){
+    if(state.buses && !liveBuses()){
       const dt=(now-lastFrame)/1000; simTime=new Date(simTime.getTime()+dt*1000); // temps réel ×1
       const buses=NexusBus.activeBuses(simTime, activeRoutes);
       const src=map.getSource('buses');
@@ -516,6 +524,9 @@
   // ---- Clic carte -> fiche lieu (géocodage inverse) ----
   map.on('click',(e)=>{
     if(reportMode||navActive) return;
+    // ne pas ouvrir la fiche si on a cliqué un arrêt ou un bus
+    const rtLayers=['bus-stops','buses'].filter(l=>map.getLayer(l));
+    if(rtLayers.length && map.queryRenderedFeatures(e.point,{layers:rtLayers}).length) return;
     const lat=e.lngLat.lat, lon=e.lngLat.lng;
     openPlaceCard({name:'Chargement…',sub:'',lat,lon});
     NexusRouting.reverse(lat,lon).then(p=>{
@@ -589,6 +600,66 @@
       NexusRouting.reverse(lat,lon).then(p=>{if(currentPlace){currentPlace=p;fillPlace(p);}}).catch(()=>{});
     }
   }
+
+  // ============================================================
+  //  Temps réel TCAT (prochains passages + positions GPS)
+  // ============================================================
+  let activeStopPopup=null; // {popup, stopId, name}
+
+  function fmtCountdown(t){
+    const s=Math.round(t-Date.now()/1000);
+    if(s<=30) return 'à quai';
+    const m=Math.round(s/60);
+    return m>=60 ? Math.floor(m/60)+' h '+(m%60)+' min' : m+' min';
+  }
+  function delayBadge(d){
+    if(d==null) return '';
+    if(d>=60) return `<span class="rt-late">+${Math.round(d/60)} min</span>`;
+    if(d<=-60) return `<span class="rt-early">${Math.round(d/60)} min</span>`;
+    return `<span class="rt-ontime">à l'heure</span>`;
+  }
+  function arrivalsHTML(stopId,name){
+    let body;
+    if(!NexusRT.enabled()) body='<div class="rt-empty">Temps réel non configuré.</div>';
+    else{
+      const now=Date.now();
+      const list=NexusRT.arrivals(stopId).filter(a=>a.time*1000>now-30000).slice(0,6);
+      if(!list.length) body=`<div class="rt-empty">${NexusRT.isFresh()?'Aucun passage à venir.':'Temps réel indisponible.'}</div>`;
+      else body=list.map(a=>{const rt=NexusBus.routes[a.route]||{};
+        return `<div class="rt-row"><span class="rt-badge" style="background:${rt.color||'#888'};color:${rt.text||'#fff'}">${rt.short||a.route||'?'}</span>`+
+          `<span class="rt-when">${fmtCountdown(a.time)}</span>${delayBadge(a.delay)}</div>`;}).join('');
+    }
+    return `<div class="rt-pop"><div class="rt-head">${name||'Arrêt'}</div><div class="rt-list">${body}</div>`+
+      `<div class="rt-foot">Prochains passages · temps réel TCAT</div></div>`;
+  }
+  function showStopArrivals(stopId,name,lngLat){
+    if(activeStopPopup&&activeStopPopup.popup) activeStopPopup.popup.remove();
+    const popup=new maplibregl.Popup({offset:14,maxWidth:'300px',className:'rt-popup'})
+      .setLngLat(lngLat).setHTML(arrivalsHTML(stopId,name)).addTo(map);
+    popup.on('close',()=>{ if(activeStopPopup&&activeStopPopup.popup===popup) activeStopPopup=null; });
+    activeStopPopup={popup,stopId,name};
+    if(NexusRT.enabled()&&!NexusRT.isFresh()) NexusRT.refresh();
+  }
+  map.on('click','bus-stops',(e)=>{
+    const f=e.features&&e.features[0]; if(!f) return;
+    showStopArrivals(f.properties.id, f.properties.name, e.lngLat);
+  });
+  map.on('mouseenter','bus-stops',()=>{map.getCanvas().style.cursor='pointer';});
+  map.on('mouseleave','bus-stops',()=>{map.getCanvas().style.cursor= reportMode?'crosshair':'';});
+
+  function updateBusesLabel(){
+    const el=$('#busesLabel'); if(!el) return;
+    el.textContent = liveBuses() ? 'Bus en direct (temps réel)' : 'Bus en direct (estimé)';
+  }
+
+  // Démarrage du flux temps réel + réactions aux mises à jour
+  NexusRT.onUpdate(()=>{
+    if(state.buses && liveBuses()) renderRealVehicles();
+    if(activeStopPopup&&activeStopPopup.popup&&activeStopPopup.popup.isOpen())
+      activeStopPopup.popup.setHTML(arrivalsHTML(activeStopPopup.stopId,activeStopPopup.name));
+    updateBusesLabel();
+  });
+  NexusRT.start();
 
   // ---- Lancement ----
   openTab('explore');
