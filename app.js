@@ -180,7 +180,7 @@
   // ===== Nav liquid glass =====
   const pill=$('#activePill');
   function movePill(btn){pill.style.width=btn.offsetWidth+'px';pill.style.transform=`translateX(${btn.offsetLeft}px)`;}
-  const panels={route:$('#panelRoute'),layers:$('#panelLayers'),saved:$('#panelSaved')};
+  const panels={explore:$('#panelExplore'),route:$('#panelRoute'),layers:$('#panelLayers'),saved:$('#panelSaved')};
   function openTab(tab){
     $$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
     const btn=document.querySelector(`.nav-btn[data-tab="${tab}"]`); if(btn)movePill(btn);
@@ -259,11 +259,14 @@
           {type:'Feature',properties:{color:'#ffb627'},geometry:{type:'Point',coordinates:[toPt.lon,toPt.lat]}}];
         drawRoute(r.coords,pts);
         const lbl={walk:'à pied',bike:'à vélo',car:'en voiture'}[currentMode];
-        out.innerHTML=`<div class="route-stat"><div class="rs"><b>${fmtD(r.distance)}</b><span>distance</span></div><div class="rs"><b>${fmtT(r.duration)}</b><span>durée ${lbl}</span></div></div>`;
+        r.mode=currentMode;
+        out.innerHTML=`<div class="route-stat"><div class="rs"><b>${fmtD(r.distance)}</b><span>distance</span></div><div class="rs"><b>${fmtT(r.duration)}</b><span>durée ${lbl}</span></div></div>
+          <button class="nav-start" id="navStart">${NEXUS_ICONS.directions()}<span>Démarrer la navigation</span></button>`;
+        $('#navStart').onclick=()=>startNav(r);
         const stepsBox=$('#routeSteps');
         if(r.steps && r.steps.length){
           stepsBox.innerHTML='<h3 class="steps-title">Étapes</h3>'+r.steps.map(s=>
-            `<div class="step-item"><span class="step-txt">${s.instruction}</span><span class="step-dist">${fmtD(s.distance)}</span></div>`).join('');
+            `<div class="step-item"><span class="step-main"><span class="step-ico">${NEXUS_ICONS.maneuver(s.type)}</span><span class="step-txt">${s.instruction}</span></span><span class="step-dist">${fmtD(s.distance)}</span></div>`).join('');
         } else stepsBox.innerHTML='';
       }
     }catch(err){out.innerHTML=`<div class="route-err">${err.message}</div>`;}
@@ -340,6 +343,227 @@
   });
 
   renderFavList(); renderFavMarkers(); renderReportList(); renderReportMarkers();
+
+  // ============================================================
+  //  Recherche, fiche lieu, position, navigation, partage
+  // ============================================================
+
+  // ---- Icônes statiques d'UI ----
+  $('#searchIco').innerHTML=NEXUS_ICONS.search();
+  $('#searchClear').innerHTML=NEXUS_ICONS.close();
+  $('#placeClose').innerHTML=NEXUS_ICONS.close();
+  $('#paDirIco').innerHTML=NEXUS_ICONS.directions();
+  $('#paFromIco').innerHTML=NEXUS_ICONS.pin();
+  $('#paSaveIco').innerHTML=NEXUS_ICONS.bookmark();
+  $('#paShareIco').innerHTML=NEXUS_ICONS.share();
+  $('#paStreetIco').innerHTML=NEXUS_ICONS.camera();
+  $('#locateBtn').innerHTML=NEXUS_ICONS.locate();
+
+  // ---- Utilitaires géo ----
+  const R=6371000, rad=Math.PI/180;
+  function hav(a,b){const dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad;
+    const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)**2;
+    return 2*R*Math.asin(Math.sqrt(x));}
+  function bearing(a,b){const φ1=a.lat*rad,φ2=b.lat*rad,Δλ=(b.lon-a.lon)*rad;
+    const y=Math.sin(Δλ)*Math.cos(φ2),x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+    return (Math.atan2(y,x)*180/Math.PI+360)%360;}
+
+  // ---- Toast ----
+  let toastEl=null,toastTimer=null;
+  function flash(msg){
+    if(!toastEl){toastEl=document.createElement('div');toastEl.className='toast';document.body.appendChild(toastEl);}
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2600);
+  }
+
+  // ---- État navigation (déclaré tôt pour le clic carte) ----
+  let navActive=false, navWatch=null, navRoute=null;
+
+  // ---- Marqueur position utilisateur ----
+  let userMarker=null;
+  function ensureUserMarker(lat,lon){
+    if(!userMarker){const el=document.createElement('div');el.className='user-dot';
+      userMarker=new maplibregl.Marker({element:el}).setLngLat([lon,lat]).addTo(map);}
+    else userMarker.setLngLat([lon,lat]);
+  }
+
+  // ---- Fiche lieu ----
+  let searchMarker=null, currentPlace=null;
+  function setSearchMarker(lat,lon){
+    if(searchMarker) searchMarker.remove();
+    const el=document.createElement('div'); el.className='fav-marker'; el.innerHTML=NEXUS_ICONS.dropPin('#ff5a5f');
+    searchMarker=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([lon,lat]).addTo(map);
+  }
+  function fillPlace(p){
+    $('#placeName').textContent=p.name||'Lieu';
+    $('#placeSub').textContent=p.sub||''; $('#placeSub').style.display=p.sub?'block':'none';
+    $('#placeCoords').textContent=p.lat.toFixed(5)+', '+p.lon.toFixed(5);
+    const saved=NexusStore.getFavorites().some(f=>Math.abs(f.lat-p.lat)<1e-5&&Math.abs(f.lon-p.lon)<1e-5);
+    $('#paSave').classList.toggle('saved',saved);
+    $('#paSave').querySelector('span:last-child').textContent=saved?'Enregistré':'Enregistrer';
+  }
+  function openPlaceCard(p){
+    currentPlace=p; fillPlace(p); setSearchMarker(p.lat,p.lon);
+    $('#placeCard').classList.add('open');
+  }
+  function closePlaceCard(){
+    $('#placeCard').classList.remove('open');
+    if(searchMarker){searchMarker.remove();searchMarker=null;} currentPlace=null;
+  }
+  $('#placeClose').onclick=closePlaceCard;
+  $('#paDir').onclick=()=>{if(!currentPlace)return;toPt={lat:currentPlace.lat,lon:currentPlace.lon};
+    $('#toInput').value=currentPlace.name; openTab('route'); closePlaceCard();};
+  $('#paFrom').onclick=()=>{if(!currentPlace)return;fromPt={lat:currentPlace.lat,lon:currentPlace.lon};
+    $('#fromInput').value=currentPlace.name; openTab('route'); closePlaceCard();};
+  $('#paSave').onclick=()=>{if(!currentPlace)return;
+    NexusStore.addFavorite({name:currentPlace.name,lat:currentPlace.lat,lon:currentPlace.lon});
+    renderFavList(); renderFavMarkers(); fillPlace(currentPlace); flash('Lieu enregistré dans les favoris');};
+  $('#paShare').onclick=()=>shareLocation(currentPlace);
+  $('#paStreet').onclick=()=>{if(!currentPlace)return;
+    window.open(`https://www.mapillary.com/app/?lat=${currentPlace.lat}&lng=${currentPlace.lon}&z=17`,'_blank','noopener');};
+
+  async function shareLocation(p){
+    if(!p)return;
+    const url=location.origin+location.pathname+`?mlat=${p.lat.toFixed(6)}&mlon=${p.lon.toFixed(6)}`;
+    try{ if(navigator.share){ await navigator.share({title:p.name||'Nexus Maps',text:p.name||'Position partagée',url}); return; } }
+    catch(e){ if(e&&e.name==='AbortError') return; }
+    try{ await navigator.clipboard.writeText(url); flash('Lien de la position copié'); }
+    catch{ prompt('Copie ce lien :',url); }
+  }
+
+  // ---- Recherche ----
+  const sInput=$('#searchInput'), sBox=$('#searchResults'), sClear=$('#searchClear');
+  let sTimer=null;
+  function kindIcon(kind){
+    if(kind==='address'||kind==='street') return NEXUS_ICONS.pin();
+    if(kind==='venue') return NEXUS_ICONS.directions();
+    return NEXUS_ICONS.search();
+  }
+  async function runSearch(q){
+    sBox.innerHTML='<div class="geo-item">Recherche…</div>';
+    try{
+      const places=await NexusRouting.geocode(q);
+      if(!places.length){sBox.innerHTML='<div class="geo-item">Aucun résultat.</div>';return;}
+      sBox.innerHTML='';
+      places.forEach(p=>{
+        const d=document.createElement('div'); d.className='geo-item';
+        d.innerHTML=`<span class="gi-ico">${kindIcon(p.kind)}</span><span class="gi-txt"><span class="gi-name">${p.name}</span>${p.sub?`<span class="gi-sub">${p.sub}</span>`:''}</span>`;
+        d.onclick=()=>{addRecent(p);map.flyTo({center:[p.lon,p.lat],zoom:16,pitch:NEXUS_CONFIG.PITCH});openPlaceCard(p);};
+        sBox.appendChild(d);
+      });
+    }catch(err){sBox.innerHTML=`<div class="geo-item">${err.message}</div>`;}
+  }
+  sInput.addEventListener('input',()=>{clearTimeout(sTimer);const q=sInput.value.trim();
+    sClear.classList.toggle('show',!!q);
+    if(q.length<3){sBox.innerHTML='';return;}
+    sTimer=setTimeout(()=>runSearch(q),350);});
+  sInput.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(sTimer);const q=sInput.value.trim();if(q.length>=2)runSearch(q);}});
+  sClear.onclick=()=>{sInput.value='';sBox.innerHTML='';sClear.classList.remove('show');sInput.focus();};
+  $$('.cat-btn').forEach(b=>b.onclick=()=>{sInput.value=b.dataset.q;sClear.classList.add('show');runSearch(b.dataset.q);});
+
+  // ---- Recherches récentes ----
+  const REC_KEY='nexus_recent_v1';
+  function getRecents(){try{return JSON.parse(localStorage.getItem(REC_KEY)||'[]');}catch{return[];}}
+  function addRecent(p){let l=getRecents().filter(r=>!(Math.abs(r.lat-p.lat)<1e-5&&Math.abs(r.lon-p.lon)<1e-5));
+    l.unshift({name:p.name,sub:p.sub||'',lat:p.lat,lon:p.lon}); l=l.slice(0,6);
+    try{localStorage.setItem(REC_KEY,JSON.stringify(l));}catch{} renderRecents();}
+  function renderRecents(){const l=getRecents(),box=$('#recentList');
+    $('#recentSection').style.display=l.length?'block':'none'; box.innerHTML='';
+    l.forEach(p=>{const d=document.createElement('div');d.className='fav-row';
+      d.innerHTML=`<span class="fav-name">${p.name}</span>`;
+      d.querySelector('.fav-name').onclick=()=>{map.flyTo({center:[p.lon,p.lat],zoom:16,pitch:NEXUS_CONFIG.PITCH});openPlaceCard(p);};
+      box.appendChild(d);});}
+  renderRecents();
+
+  // ---- Ma position ----
+  $('#locateBtn').onclick=()=>{
+    if(!navigator.geolocation){flash('Géolocalisation non disponible sur cet appareil');return;}
+    const btn=$('#locateBtn'); btn.classList.add('locating');
+    navigator.geolocation.getCurrentPosition(pos=>{
+      btn.classList.remove('locating'); btn.classList.add('active');
+      const lat=pos.coords.latitude,lon=pos.coords.longitude;
+      ensureUserMarker(lat,lon);
+      map.flyTo({center:[lon,lat],zoom:16,pitch:NEXUS_CONFIG.PITCH});
+    },err=>{btn.classList.remove('locating');flash('Position indisponible : '+err.message);},
+    {enableHighAccuracy:true,timeout:10000});
+  };
+
+  // ---- Clic carte -> fiche lieu (géocodage inverse) ----
+  map.on('click',(e)=>{
+    if(reportMode||navActive) return;
+    const lat=e.lngLat.lat, lon=e.lngLat.lng;
+    openPlaceCard({name:'Chargement…',sub:'',lat,lon});
+    NexusRouting.reverse(lat,lon).then(p=>{
+      if(currentPlace&&Math.abs(currentPlace.lat-lat)<1e-9){currentPlace=p;fillPlace(p);}
+    }).catch(()=>{if(currentPlace)$('#placeName').textContent='Lieu sélectionné';});
+  });
+
+  // ---- Navigation turn-by-turn ----
+  function startNav(r){
+    if(!r||!r.coords||r.coords.length<2){flash('Itinéraire indisponible pour la navigation');return;}
+    if(!navigator.geolocation){flash('Géolocalisation requise pour la navigation');return;}
+    navRoute=r;
+    const cum=[0];
+    for(let i=1;i<r.coords.length;i++)
+      cum[i]=cum[i-1]+hav({lat:r.coords[i-1][0],lon:r.coords[i-1][1]},{lat:r.coords[i][0],lon:r.coords[i][1]});
+    r.cum=cum; r.total=cum[cum.length-1]||r.distance;
+    r.speed=r.duration>0?r.distance/r.duration:1.4;
+    navActive=true;
+    Object.values(panels).forEach(p=>p.classList.remove('open'));
+    $$('.nav-btn').forEach(b=>b.classList.remove('active'));
+    closePlaceCard();
+    $('#navGuide').classList.add('open');
+    navWatch=navigator.geolocation.watchPosition(onNavPos,
+      err=>flash('GPS : '+err.message),{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+  }
+  function nearestIdx(p){let best=0,bd=Infinity;
+    for(let i=0;i<navRoute.coords.length;i++){const d=hav(p,{lat:navRoute.coords[i][0],lon:navRoute.coords[i][1]});
+      if(d<bd){bd=d;best=i;}} return best;}
+  function onNavPos(pos){
+    if(!navActive||!navRoute) return;
+    const p={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    ensureUserMarker(p.lat,p.lon);
+    const k=nearestIdx(p), cum=navRoute.cum;
+    const remain=Math.max(0,navRoute.total-cum[k]);
+    const step=navRoute.steps.find(s=>s.wp&&s.wp[0]>k)||navRoute.steps[navRoute.steps.length-1];
+    const mIdx=step&&step.wp?Math.min(step.wp[0],cum.length-1):cum.length-1;
+    const distToManeuver=Math.max(0,cum[mIdx]-cum[k]);
+    const etaSec=remain/(navRoute.speed||1.4), eta=new Date(Date.now()+etaSec*1000);
+    $('#ngIco').innerHTML=NEXUS_ICONS.maneuver(step?step.type:10);
+    $('#ngDist').textContent=fmtD(distToManeuver);
+    $('#ngInstr').textContent=step?step.instruction:'Arrivée à destination';
+    $('#ngEta').textContent=eta.getHours()+':'+String(eta.getMinutes()).padStart(2,'0');
+    $('#ngRemain').textContent=fmtD(remain);
+    $('#ngNext').textContent=fmtT(etaSec);
+    const ahead=navRoute.coords[Math.min(k+2,navRoute.coords.length-1)];
+    map.easeTo({center:[p.lon,p.lat],zoom:17,pitch:60,bearing:bearing(p,{lat:ahead[0],lon:ahead[1]}),duration:900});
+    if(remain<25){flash('Vous êtes arrivé à destination');stopNav();}
+  }
+  function stopNav(){
+    navActive=false; $('#navGuide').classList.remove('open');
+    if(navWatch!=null){navigator.geolocation.clearWatch(navWatch);navWatch=null;}
+    map.easeTo({pitch:NEXUS_CONFIG.PITCH,bearing:-15,duration:600});
+  }
+  $('#ngExit').onclick=stopNav;
+
+  // ---- Liens profonds (partage de vue / position) ----
+  function applyHash(){
+    const m=location.hash.match(/^#(\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)/);
+    if(m) map.jumpTo({center:[parseFloat(m[3]),parseFloat(m[2])],zoom:parseFloat(m[1])});
+  }
+  applyHash();
+  let hashTimer=null;
+  map.on('moveend',()=>{clearTimeout(hashTimer);hashTimer=setTimeout(()=>{const c=map.getCenter();
+    history.replaceState(null,'',`#${map.getZoom().toFixed(1)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}`);},400);});
+  const params=new URLSearchParams(location.search);
+  if(params.has('mlat')&&params.has('mlon')){
+    const lat=parseFloat(params.get('mlat')),lon=parseFloat(params.get('mlon'));
+    if(isFinite(lat)&&isFinite(lon)){
+      map.jumpTo({center:[lon,lat],zoom:16});
+      openPlaceCard({name:'Chargement…',sub:'',lat,lon});
+      NexusRouting.reverse(lat,lon).then(p=>{if(currentPlace){currentPlace=p;fillPlace(p);}}).catch(()=>{});
+    }
+  }
 
   // ---- Lancement ----
   openTab('explore');
