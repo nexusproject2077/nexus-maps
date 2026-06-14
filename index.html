@@ -127,7 +127,7 @@
       <label class="toggle-row"><span>Bâtiments 3D</span><input type="checkbox" id="tog3d" checked></label>
       <label class="toggle-row"><span>Arrêts de bus</span><input type="checkbox" id="togStops"></label>
       <label class="toggle-row"><span>Lignes de bus</span><input type="checkbox" id="togLines"></label>
-      <label class="toggle-row"><span>Bus en direct (estimé)</span><input type="checkbox" id="togBuses"></label>
+      <label class="toggle-row"><span id="busesLabel">Bus en direct (estimé)</span><input type="checkbox" id="togBuses"></label>
       <label class="toggle-row"><span>Pistes cyclables</span><input type="checkbox" id="togCycle"></label>
     </div>
     <div class="layer-section" id="busLineFilter" style="display:none">
@@ -135,7 +135,7 @@
       <div class="line-controls"><button class="mini-btn" id="allLines">Tout</button><button class="mini-btn" id="noLines">Aucune</button></div>
       <div id="lineList" class="line-list"></div>
     </div>
-    <p class="disclaimer">Trafic temps réel indisponible (aucune source gratuite). Bus = positions <strong>estimées</strong> des horaires théoriques.</p>
+    <p class="disclaimer">Clique un <strong>arrêt</strong> pour voir les prochains passages en <strong>temps réel</strong> (flux officiel TCAT). Positions des bus = <strong>estimées</strong> des horaires, sauf si le flux publie des positions GPS.</p>
   </section>
 
   <!-- Boutons flottants droite -->
@@ -182,12 +182,14 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
-  <script src="config.js?v=11"></script>
-  <script src="icons.js?v=11"></script>
-  <script src="space.js?v=11"></script>
-  <script src="store.js?v=11"></script>
-  <script src="busengine.js?v=11"></script>
-  <script src="routing.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="config.js?v=12"></script>
+  <script src="icons.js?v=12"></script>
+  <script src="space.js?v=12"></script>
+  <script src="store.js?v=12"></script>
+  <script src="busengine.js?v=12"></script>
+  <script src="gtfsrt.js?v=12"></script>
+  <script src="realtime.js?v=12"></script>
+  <script src="routing.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
