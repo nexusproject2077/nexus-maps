@@ -3,6 +3,10 @@
    ============================================================ */
 (async function () {
   const $=(s)=>document.querySelector(s), $$=(s)=>document.querySelectorAll(s);
+  // Raccourci i18n (repli sur la clé si le module n'est pas chargé)
+  const T=(k,v)=>(window.NexusI18n?NexusI18n.t(k,v):k);
+  // Rendu des stats perso, branché plus bas (évite un accès avant init)
+  let statsRender=null;
 
   // ---- Données bus ----
   let data;
@@ -262,8 +266,8 @@
 
   $('#routeGo').onclick=async()=>{
     const out=$('#routeResult');
-    if(!fromPt||!toPt){out.innerHTML=`<div class="route-err">Choisis un départ et une arrivée dans les suggestions.</div>`;return;}
-    out.innerHTML=`<div class="route-err" style="color:var(--text-dim)">Calcul…</div>`;
+    if(!fromPt||!toPt){out.innerHTML=`<div class="route-err">${T('route.err.points')}</div>`;return;}
+    out.innerHTML=`<div class="route-err" style="color:var(--text-dim)">${T('route.calc')}</div>`;
     try{
       if(currentMode==='bus'){
         const r=NexusBus.busRoute(fromPt,toPt);
@@ -295,11 +299,11 @@
         const lbl={walk:'à pied',bike:'à vélo',car:'en voiture'}[currentMode];
         r.mode=currentMode;
         out.innerHTML=`<div class="route-stat"><div class="rs"><b>${fmtD(r.distance)}</b><span>distance</span></div><div class="rs"><b>${fmtT(r.duration)}</b><span>durée ${lbl}</span></div></div>
-          <button class="nav-start" id="navStart">${NEXUS_ICONS.directions()}<span>Démarrer la navigation</span></button>`;
+          <button class="nav-start" id="navStart">${NEXUS_ICONS.directions()}<span>${T('route.nav.start')}</span></button>`;
         $('#navStart').onclick=()=>startNav(r);
         const stepsBox=$('#routeSteps');
         if(r.steps && r.steps.length){
-          stepsBox.innerHTML='<h3 class="steps-title">Étapes</h3>'+r.steps.map(s=>
+          stepsBox.innerHTML=`<h3 class="steps-title">${T('route.steps')}</h3>`+r.steps.map(s=>
             `<div class="step-item"><span class="step-main"><span class="step-ico">${NEXUS_ICONS.maneuver(s.type)}</span><span class="step-txt">${s.instruction}</span></span><span class="step-dist">${fmtD(s.distance)}</span></div>`).join('');
         } else stepsBox.innerHTML='';
       }
@@ -331,7 +335,8 @@
   }
   function renderFavList(){
     const box=$('#favList'), favs=NexusStore.getFavorites();
-    box.innerHTML = favs.length ? '' : '<p class="hint">Aucun lieu enregistré.</p>';
+    box.innerHTML = favs.length ? '' : `<p class="hint">${T('fav.empty')}</p>`;
+    if(statsRender) statsRender();
     favs.forEach(f=>{
       const d=document.createElement('div'); d.className='fav-row';
       d.innerHTML=`<span class="fav-name">${f.name}</span><button class="fav-del" title="Supprimer" aria-label="Supprimer">${NEXUS_ICONS.close()}</button>`;
@@ -364,7 +369,7 @@
   // mode signalement : clic sur la carte
   $('#reportToggle').onclick=()=>{
     reportMode=!reportMode;
-    $('#reportToggle').textContent = reportMode ? 'Mode signalement ACTIF — clique la carte' : 'Activer le mode signalement';
+    $('#reportToggle').textContent = T(reportMode ? 'fav.reports.active' : 'fav.reports.toggle');
     $('#reportToggle').classList.toggle('active-report', reportMode);
     map.getCanvas().style.cursor = reportMode ? 'crosshair' : '';
   };
@@ -411,7 +416,7 @@
   }
 
   // ---- État navigation (déclaré tôt pour le clic carte) ----
-  let navActive=false, navWatch=null, navRoute=null;
+  let navActive=false, navWatch=null, navRoute=null, navLastPt=null;
 
   // ---- Marqueur position utilisateur ----
   let userMarker=null;
@@ -434,10 +439,11 @@
     $('#placeCoords').textContent=p.lat.toFixed(5)+', '+p.lon.toFixed(5);
     const saved=NexusStore.getFavorites().some(f=>Math.abs(f.lat-p.lat)<1e-5&&Math.abs(f.lon-p.lon)<1e-5);
     $('#paSave').classList.toggle('saved',saved);
-    $('#paSave').querySelector('span:last-child').textContent=saved?'Enregistré':'Enregistrer';
+    $('#paSave').querySelector('span:last-child').textContent=T(saved?'place.saved':'place.save');
   }
   function openPlaceCard(p){
     currentPlace=p; fillPlace(p); setSearchMarker(p.lat,p.lon);
+    if(typeof showNearbyStops==='function') showNearbyStops(p);
     $('#placeCard').classList.add('open');
   }
   function closePlaceCard(){
@@ -451,7 +457,7 @@
     $('#fromInput').value=currentPlace.name; openTab('route'); closePlaceCard();};
   $('#paSave').onclick=()=>{if(!currentPlace)return;
     NexusStore.addFavorite({name:currentPlace.name,lat:currentPlace.lat,lon:currentPlace.lon});
-    renderFavList(); renderFavMarkers(); fillPlace(currentPlace); flash('Lieu enregistré dans les favoris');};
+    renderFavList(); renderFavMarkers(); fillPlace(currentPlace); flash(T('toast.saved'));};
   $('#paShare').onclick=()=>shareLocation(currentPlace);
   $('#paStreet').onclick=()=>{if(!currentPlace)return;
     window.open(`https://www.mapillary.com/app/?lat=${currentPlace.lat}&lng=${currentPlace.lon}&z=17`,'_blank','noopener');};
@@ -461,7 +467,7 @@
     const url=location.origin+location.pathname+`?mlat=${p.lat.toFixed(6)}&mlon=${p.lon.toFixed(6)}`;
     try{ if(navigator.share){ await navigator.share({title:p.name||'Nexus Maps',text:p.name||'Position partagée',url}); return; } }
     catch(e){ if(e&&e.name==='AbortError') return; }
-    try{ await navigator.clipboard.writeText(url); flash('Lien de la position copié'); }
+    try{ await navigator.clipboard.writeText(url); flash(T('toast.shareCopied')); }
     catch{ prompt('Copie ce lien :',url); }
   }
 
@@ -511,7 +517,7 @@
 
   // ---- Ma position ----
   $('#locateBtn').onclick=()=>{
-    if(!navigator.geolocation){flash('Géolocalisation non disponible sur cet appareil');return;}
+    if(!navigator.geolocation){flash(T('toast.geo.off'));return;}
     const btn=$('#locateBtn'); btn.classList.add('locating');
     navigator.geolocation.getCurrentPosition(pos=>{
       btn.classList.remove('locating'); btn.classList.add('active');
@@ -545,7 +551,7 @@
       cum[i]=cum[i-1]+hav({lat:r.coords[i-1][0],lon:r.coords[i-1][1]},{lat:r.coords[i][0],lon:r.coords[i][1]});
     r.cum=cum; r.total=cum[cum.length-1]||r.distance;
     r.speed=r.duration>0?r.distance/r.duration:1.4;
-    navActive=true;
+    navActive=true; navLastPt=null;
     Object.values(panels).forEach(p=>p.classList.remove('open'));
     $$('.nav-btn').forEach(b=>b.classList.remove('active'));
     closePlaceCard();
@@ -560,6 +566,9 @@
     if(!navActive||!navRoute) return;
     const p={lat:pos.coords.latitude,lon:pos.coords.longitude};
     ensureUserMarker(p.lat,p.lon);
+    // Stats perso : distance réellement parcourue (ignore les sauts GPS)
+    if(navLastPt && typeof addDistance==='function') addDistance(hav(navLastPt,p));
+    navLastPt=p;
     const k=nearestIdx(p), cum=navRoute.cum;
     const remain=Math.max(0,navRoute.total-cum[k]);
     const step=navRoute.steps.find(s=>s.wp&&s.wp[0]>k)||navRoute.steps[navRoute.steps.length-1];
@@ -574,7 +583,7 @@
     $('#ngNext').textContent=fmtT(etaSec);
     const ahead=navRoute.coords[Math.min(k+2,navRoute.coords.length-1)];
     map.easeTo({center:[p.lon,p.lat],zoom:17,pitch:60,bearing:bearing(p,{lat:ahead[0],lon:ahead[1]}),duration:900});
-    if(remain<25){flash('Vous êtes arrivé à destination');stopNav();}
+    if(remain<25){flash(T('toast.arrived'));stopNav();}
   }
   function stopNav(){
     navActive=false; $('#navGuide').classList.remove('open');
@@ -634,6 +643,7 @@
       `<div class="rt-foot">Prochains passages · temps réel TCAT</div></div>`;
   }
   function showStopArrivals(stopId,name,lngLat){
+    if(typeof addVisitedStop==='function') addVisitedStop(stopId);
     if(activeStopPopup&&activeStopPopup.popup) activeStopPopup.popup.remove();
     const popup=new maplibregl.Popup({offset:14,maxWidth:'300px',className:'rt-popup'})
       .setLngLat(lngLat).setHTML(arrivalsHTML(stopId,name)).addTo(map);
@@ -650,7 +660,7 @@
 
   function updateBusesLabel(){
     const el=$('#busesLabel'); if(!el) return;
-    el.textContent = liveBuses() ? 'Bus en direct (temps réel)' : 'Bus en direct (estimé)';
+    el.textContent = T(liveBuses() ? 'layers.buses.live' : 'layers.buses.est');
   }
 
   // Démarrage du flux temps réel + réactions aux mises à jour
@@ -661,6 +671,155 @@
     updateBusesLabel();
   });
   NexusRT.start();
+
+  // Debug temps réel : nombre de véhicules et d'arrêts avec passages
+  NexusRT.onUpdate(()=>{
+    try{ console.log('🚍 Véhicules live :', NexusRT.vehicles().length,
+      '· arrêts avec passages :', NexusBus.stops.filter(s=>NexusRT.arrivals(s.id).length).length); }catch(e){}
+  });
+
+  // ============================================================
+  //  Fonctionnalités gratuites (offline-first, tout côté client)
+  // ============================================================
+
+  // ---- Stats perso (distance parcourue, arrêts vus) ----
+  const STATS_KEY='nexus_stats_v1';
+  function readStats(){try{return JSON.parse(localStorage.getItem(STATS_KEY)||'{}');}catch{return{};}}
+  const stats=readStats(); stats.dist=stats.dist||0; stats.stops=stats.stops||{};
+  function saveStats(){try{localStorage.setItem(STATS_KEY,JSON.stringify(stats));}catch{}}
+  function renderStats(){
+    const d=stats.dist;
+    if($('#statDist')) $('#statDist').textContent = d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m';
+    if($('#statStops')) $('#statStops').textContent = Object.keys(stats.stops).length;
+    if($('#statFav')) $('#statFav').textContent = NexusStore.getFavorites().length;
+  }
+  function addDistance(m){ if(m>1 && m<2000){ stats.dist+=m; saveStats(); renderStats(); } }
+  function addVisitedStop(id){ if(id!=null && !stats.stops[id]){ stats.stops[id]=1; saveStats(); renderStats(); } }
+  statsRender=renderStats; renderStats();
+
+  // ---- Arrêts à proximité (fiche lieu) ----
+  function stopLinesBadges(stopId){
+    const ids=(data.stopRoutes&&data.stopRoutes[stopId])||[];
+    return ids.slice(0,4).map(id=>{const rt=NexusBus.routes[id]||{};
+      return `<span class="pn-badge" style="background:${rt.color||'#888'};color:${rt.text||'#fff'}">${rt.short||id}</span>`;}).join('');
+  }
+  function showNearbyStops(p){
+    const sec=$('#placeNearby'), box=$('#placeNearbyList');
+    if(!sec||!box||!NexusBus.stops.length){ if(sec)sec.style.display='none'; return; }
+    const near=NexusBus.stops.map(s=>({s,d:hav({lat:p.lat,lon:p.lon},{lat:s.lat,lon:s.lon})}))
+      .filter(o=>o.d<500).sort((a,b)=>a.d-b.d).slice(0,5);
+    box.innerHTML='';
+    if(!near.length){ sec.style.display='none'; return; }
+    sec.style.display='block';
+    near.forEach(({s,d})=>{
+      const row=document.createElement('div'); row.className='pn-row';
+      const dist=d<1000?Math.round(d)+' m':(d/1000).toFixed(1)+' km';
+      row.innerHTML=`<span class="pn-name">${s.name}</span><span class="pn-lines">${stopLinesBadges(s.id)}</span><span class="pn-dist">${dist}</span>`;
+      row.onclick=()=>{ if(!state.stops){state.stops=true;$('#togStops').checked=true;applyVisibility();}
+        map.flyTo({center:[s.lon,s.lat],zoom:16,pitch:NEXUS_CONFIG.PITCH});
+        showStopArrivals(s.id,s.name,[s.lon,s.lat]); };
+      box.appendChild(row);
+    });
+  }
+
+  // ---- Sélecteur de langue FR/EN ----
+  function refreshDynamicLabels(){
+    updateBusesLabel();
+    $('#reportToggle').textContent = T(reportMode ? 'fav.reports.active' : 'fav.reports.toggle');
+    if(!NexusStore.getFavorites().length) renderFavList();
+    if(currentPlace) fillPlace(currentPlace);
+    const ab=document.querySelector('.nav-btn.active'); if(ab) movePill(ab);
+  }
+  if(window.NexusI18n){
+    $('#langBtn').onclick=()=>{ NexusI18n.toggle(); flash('Langue : '+NexusI18n.lang.toUpperCase()); };
+    NexusI18n.onChange(refreshDynamicLabels);
+    $('#langBtn').textContent = NexusI18n.lang.toUpperCase();
+  }
+
+  // ---- Export / Import des favoris (JSON) ----
+  $('#favExport').onclick=()=>{
+    const favs=NexusStore.getFavorites();
+    const blob=new Blob([JSON.stringify({app:'nexus-maps',type:'favorites',version:1,exportedAt:new Date().toISOString(),favorites:favs},null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='nexus-favoris-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    flash(T('toast.exported'));
+  };
+  $('#favImport').onclick=()=>$('#favFile').click();
+  $('#favFile').onchange=(e)=>{
+    const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const parsed=JSON.parse(reader.result);
+        const list=Array.isArray(parsed)?parsed:(parsed.favorites||[]);
+        let n=0;
+        list.forEach(f=>{ if(f&&isFinite(f.lat)&&isFinite(f.lon)){ NexusStore.addFavorite({name:f.name||'Lieu',lat:+f.lat,lon:+f.lon}); n++; } });
+        renderFavList(); renderFavMarkers();
+        flash(T('toast.imported')+(n?' ('+n+')':''));
+      }catch(err){ flash(T('toast.import.err')); }
+      $('#favFile').value='';
+    };
+    reader.readAsText(file);
+  };
+
+  // ---- Mode économie d'énergie (manuel + auto batterie faible) ----
+  const ECO_KEY='nexus_eco_v1';
+  function setEco(on,auto){
+    document.body.classList.toggle('power-save',on);
+    if($('#togEco')) $('#togEco').checked=on;
+    try{ localStorage.setItem(ECO_KEY,on?'1':'0'); }catch{}
+    if(window.NexusSpace) NexusSpace.setVisible(on?false:(spaceEl&&parseFloat(spaceEl.style.opacity)>0.01));
+    flash(T(auto?'toast.eco.auto':(on?'toast.eco.on':'toast.eco.off')));
+  }
+  if($('#togEco')){
+    let ecoInit=false; try{ ecoInit=localStorage.getItem(ECO_KEY)==='1'; }catch{}
+    if(ecoInit) document.body.classList.add('power-save');
+    $('#togEco').checked=ecoInit;
+    $('#togEco').onchange=e=>setEco(e.target.checked,false);
+  }
+  if(navigator.getBattery){
+    navigator.getBattery().then(bat=>{
+      const check=()=>{ if(!bat.charging && bat.level<=0.2 && !document.body.classList.contains('power-save')) setEco(true,true); };
+      bat.addEventListener('levelchange',check); bat.addEventListener('chargingchange',check); check();
+    }).catch(()=>{});
+  }
+
+  // ---- Raccourcis clavier ----
+  document.addEventListener('keydown',(e)=>{
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    const tag=(e.target.tagName||'').toLowerCase(), typing=tag==='input'||tag==='textarea';
+    if(e.key==='Escape'){
+      if(typing){e.target.blur();return;}
+      if($('#navGuide').classList.contains('open')){stopNav();return;}
+      if($('#placeCard').classList.contains('open')){closePlaceCard();return;}
+      return;
+    }
+    if(typing) return;
+    switch(e.key){
+      case '/': e.preventDefault(); openTab('explore'); $('#searchInput').focus(); break;
+      case 'm': case 'M': $('#locateBtn').click(); break;
+      case 'r': case 'R': openTab('route'); break;
+      case 'l': case 'L': openTab('layers'); break;
+      case 'f': case 'F': openTab('saved'); break;
+      case '?': flash(T('kbd.hint')); break;
+    }
+  });
+
+  // ---- Swipe vers le bas pour fermer les feuilles (mobile) ----
+  Object.values(panels).forEach(panel=>{
+    const head=panel.querySelector('.panel-head'); if(!head) return;
+    let startY=0, dy=0, dragging=false;
+    const onStart=(y)=>{ if(window.innerWidth>760) return; startY=y; dy=0; dragging=true; panel.classList.add('dragging'); };
+    const onMove=(y)=>{ if(!dragging) return; dy=Math.max(0,y-startY); panel.style.transform='translateY('+dy+'px)'; };
+    const onEnd=()=>{ if(!dragging) return; dragging=false; panel.classList.remove('dragging'); panel.style.transform='';
+      if(dy>90){ const tab=Object.keys(panels).find(k=>panels[k]===panel);
+        $$('.nav-btn').forEach(b=>b.classList.remove('active')); panel.classList.remove('open'); } };
+    head.addEventListener('touchstart',e=>onStart(e.touches[0].clientY),{passive:true});
+    head.addEventListener('touchmove',e=>onMove(e.touches[0].clientY),{passive:true});
+    head.addEventListener('touchend',onEnd);
+  });
 
   // ---- Lancement ----
   openTab('explore');

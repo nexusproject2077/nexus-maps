@@ -1,0 +1,21 @@
+{
+  "name": "Nexus Maps",
+  "short_name": "Nexus",
+  "description": "Carte 3D temps réel du réseau de bus, itinéraires et favoris 100% locaux.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#04070e",
+  "theme_color": "#00e5ff",
+  "lang": "fr",
+  "categories": ["navigation", "travel", "maps"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -57,7 +57,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 [data-theme="light"] .theme-btn .moon{opacity:0;transform:rotate(90deg) scale(.5)}
 
 /* ===== Panels ===== */
-.panel-card{position:fixed;top:84px;left:14px;width:310px;max-height:calc(100vh - 110px);background:var(--panel-bg);
+.panel-card{position:fixed;top:84px;left:14px;width:310px;max-height:calc(100vh - 110px);background:var(--panel-bg);container:panel / inline-size;
   backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
   border:1px solid var(--line);border-radius:16px;z-index:900;display:flex;flex-direction:column;overflow-y:auto;
   box-shadow:0 20px 50px -20px rgba(0,0,0,.5);opacity:0;transform:translateX(-18px) scale(.97);transform-origin:top left;pointer-events:none;
@@ -391,3 +391,103 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
   *,*::after,*::before{animation:none!important}
   .panel-card,.place-card,.nav-guide{transition:opacity .2s!important}
 }
+
+/* ============================================================
+   UPGRADE RESPONSIVE PRO 2026
+   Container queries (panels adaptatifs), paysage mobile, grands
+   écrans, haute densité, contraste élevé, mode économie.
+   ============================================================ */
+
+/* Panneaux ultra-étroits (foldables fermés, petits containers) */
+@container panel (max-width: 280px){
+  .cat-grid{grid-template-columns:1fr}
+  .pa-btn{min-width:48px;padding:8px 4px;font-size:10px}
+  .route-modes{gap:4px}
+  .mode-btn{min-width:0;font-size:10px;padding:8px 2px}
+  .basemap-grid{flex-wrap:wrap}
+}
+
+/* Mobile paysage : nav plus compacte, panneaux moins hauts */
+@media (max-width:480px) and (orientation:landscape){
+  .liquid-nav{padding:4px 8px;gap:4px}
+  .panel-card{max-height:65vh}
+  .place-card{max-height:70vh;overflow-y:auto}
+}
+
+/* Grands écrans : panneaux plus larges, cartes flottantes plus généreuses */
+@media (min-width:1025px){
+  .panel-card{left:24px;width:360px;max-height:calc(100vh - 80px)}
+  .place-card{bottom:24px;width:min(420px,calc(100vw - 48px))}
+  .nav-guide{width:min(460px,calc(100vw - 48px))}
+  .cat-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Très grands écrans (desktop large) */
+@media (min-width:1600px){
+  .panel-card{width:380px}
+}
+
+/* Haute densité (Retina, écrans pliables) : halo utilisateur plus fin/rapide */
+@media (resolution > 2dppx){
+  .user-dot::after{animation-duration:1.6s;border-width:1.5px}
+}
+
+/* Contraste élevé (accessibilité) : bordures et textes renforcés */
+@media (prefers-contrast:more){
+  :root{--text-dim:#c2ccd8;--text-faint:#9aa8b8;--line:#3a4c60}
+  .panel-card,.place-card,.nav-guide .ng-bottom{border-width:2px}
+  .nav-btn.active,.base-btn.active,.mode-btn.active{outline:1px solid var(--cyan)}
+  .liquid-nav{background:rgba(8,12,20,.82)}
+  [data-theme="light"] .liquid-nav{background:rgba(255,255,255,.85)}
+}
+@media (prefers-contrast:more) and (prefers-color-scheme:light){
+  :root{--text-dim:#33455a;--text-faint:#4a5c70}
+}
+
+/* Focus visible clavier (accessibilité navigation au clavier) */
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+.nav-btn:focus-visible,.mode-btn:focus-visible,.base-btn:focus-visible,.cat-btn:focus-visible{outline-offset:-2px}
+
+/* Mode Économie d'énergie : coupe les animations et effets coûteux */
+body.power-save *,body.power-save *::before,body.power-save *::after{
+  animation:none!important;transition-duration:.05s!important}
+body.power-save .liquid-nav,body.power-save .panel-card,body.power-save .place-card,
+body.power-save .nav-guide .ng-bottom,body.power-save .rt-popup .maplibregl-popup-content{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--panel-bg)}
+body.power-save #space{display:none!important}
+
+/* Feuille (bottom sheet mobile) en cours de glissement (swipe to close) */
+.panel-card.dragging{transition:none!important}
+
+/* Barre d'outils secondaire (export/import favoris) */
+.tool-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tool-row .mini-btn{flex:1;min-width:96px;text-align:center}
+
+/* Section arrêts à proximité (fiche lieu) */
+.place-nearby{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.place-nearby h4{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;font-weight:500}
+.pn-row{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:8px;cursor:pointer;transition:background .15s}
+.pn-row:hover{background:var(--elev)}
+.pn-name{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-dist{font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pn-lines{display:flex;gap:3px;flex-shrink:0}
+.pn-badge{min-width:22px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:0 4px}
+.place-body{max-height:none}
+.place-scroll{max-height:min(52vh,420px);overflow-y:auto}
+
+/* Stats perso */
+.stat-grid{display:flex;gap:10px}
+.stat-cell{flex:1;background:var(--elev);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+.stat-cell b{display:block;font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--cyan)}
+.stat-cell span{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px}
+
+/* Sélecteur de langue */
+.lang-btn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:rgba(255,255,255,.08);color:var(--text);
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  box-shadow:inset 0 0 0 1px var(--glass-border);position:relative;z-index:2}
+.lang-btn:hover{color:var(--cyan)}
+
+/* Nav liquid glass — finitions vibrantes (renforcement, non destructif) */
+.liquid-nav{backdrop-filter:blur(26px) saturate(200%);-webkit-backdrop-filter:blur(26px) saturate(200%)}
+.nav-btn.active{text-shadow:0 0 12px currentColor}
+.nav-btn:hover svg{transform:scale(1.18)}
