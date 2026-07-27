@@ -21,6 +21,6 @@ const NEXUS_CONFIG = {
   // relais CORS (ex. ton VPS : "https://ton-vps/cors?u="). Le flux sera appelé
   // via PROXY + encodeURIComponent(URL). Laisser vide si le flux autorise CORS.
   TCAT_RT_PROXY: "",
-  // Intervalle de rafraîchissement (ms)
-  TCAT_RT_INTERVAL: 30000,
+  // Intervalle de rafraîchissement (ms) — plus agressif pour du live
+  TCAT_RT_INTERVAL: 20000,
 };

@@ -2,9 +2,18 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5, interactive-widget=resizes-content">
   <meta name="theme-color" content="#04070e">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Nexus Maps — carte 3D temps réel du réseau de bus, itinéraires piéton/vélo/voiture/bus, favoris et signalements 100% locaux.">
   <title>Nexus Maps</title>
+  <!-- PWA : installable + offline-first -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nexus">
   <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -20,25 +29,26 @@
     <div class="nav-brand"><span class="brand-mark">NEXUS</span><span class="brand-sub">MAPS</span></div>
     <div class="nav-items" id="navItems">
       <div class="active-pill" id="activePill"></div>
-      <button class="nav-btn active" data-tab="explore" title="Explorer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-        <span>Explorer</span>
+      <button class="nav-btn active" data-tab="explore" title="Explorer" aria-label="Explorer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        <span data-i18n="nav.explore">Explorer</span>
       </button>
-      <button class="nav-btn" data-tab="route" title="Itinéraire">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V9a4 4 0 0 1 4-4h4"/><path d="M18 8v7a4 4 0 0 1-4 4h-4"/></svg>
-        <span>Itinéraire</span>
+      <button class="nav-btn" data-tab="route" title="Itinéraire" aria-label="Itinéraire">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V9a4 4 0 0 1 4-4h4"/><path d="M18 8v7a4 4 0 0 1-4 4h-4"/></svg>
+        <span data-i18n="nav.route">Itinéraire</span>
       </button>
-      <button class="nav-btn" data-tab="layers" title="Couches">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-        <span>Couches</span>
+      <button class="nav-btn" data-tab="layers" title="Couches" aria-label="Couches">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span data-i18n="nav.layers">Couches</span>
       </button>
-      <button class="nav-btn" data-tab="saved" title="Favoris">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        <span>Favoris</span>
+      <button class="nav-btn" data-tab="saved" title="Favoris" aria-label="Favoris">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span data-i18n="nav.saved">Favoris</span>
       </button>
     </div>
     <div class="nav-meta">
-      <button class="theme-btn" id="themeBtn" title="Thème">
+      <button class="lang-btn" id="langBtn" title="Langue / Language" aria-label="Changer de langue">FR</button>
+      <button class="theme-btn" id="themeBtn" title="Thème" aria-label="Basculer thème clair/sombre">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
@@ -46,97 +56,111 @@
   </nav>
 
   <!-- Panneau Explorer / Recherche -->
-  <section class="panel-card" id="panelExplore">
-    <div class="panel-head"><h2>Explorer</h2></div>
+  <section class="panel-card" id="panelExplore" role="region" aria-label="Explorer">
+    <div class="panel-head"><h2 data-i18n="nav.explore">Explorer</h2></div>
     <div class="search-wrap">
-      <span class="search-ico" id="searchIco"></span>
-      <input type="text" id="searchInput" placeholder="Rechercher un lieu, une adresse…" autocomplete="off">
+      <span class="search-ico" id="searchIco" aria-hidden="true"></span>
+      <input type="text" id="searchInput" placeholder="Rechercher un lieu, une adresse…" data-i18n-ph="search.ph" autocomplete="off" aria-label="Rechercher un lieu">
       <button class="search-clear" id="searchClear" title="Effacer" aria-label="Effacer"></button>
     </div>
-    <div class="geo-results inline" id="searchResults"></div>
+    <div class="geo-results inline" id="searchResults" role="listbox" aria-label="Résultats de recherche"></div>
     <div class="layer-section">
-      <h3>Catégories</h3>
+      <h3 data-i18n="explore.categories">Catégories</h3>
       <div class="cat-grid" id="catGrid">
-        <button class="cat-btn" data-q="restaurant">Restaurants</button>
-        <button class="cat-btn" data-q="café">Cafés</button>
-        <button class="cat-btn" data-q="supermarché">Courses</button>
-        <button class="cat-btn" data-q="pharmacie">Pharmacies</button>
-        <button class="cat-btn" data-q="station essence">Essence</button>
-        <button class="cat-btn" data-q="hôtel">Hôtels</button>
-        <button class="cat-btn" data-q="parking">Parkings</button>
-        <button class="cat-btn" data-q="hôpital">Santé</button>
+        <button class="cat-btn" data-q="restaurant" data-i18n="cat.restaurant">Restaurants</button>
+        <button class="cat-btn" data-q="café" data-i18n="cat.cafe">Cafés</button>
+        <button class="cat-btn" data-q="supermarché" data-i18n="cat.groceries">Courses</button>
+        <button class="cat-btn" data-q="pharmacie" data-i18n="cat.pharmacy">Pharmacies</button>
+        <button class="cat-btn" data-q="station essence" data-i18n="cat.fuel">Essence</button>
+        <button class="cat-btn" data-q="hôtel" data-i18n="cat.hotel">Hôtels</button>
+        <button class="cat-btn" data-q="parking" data-i18n="cat.parking">Parkings</button>
+        <button class="cat-btn" data-q="hôpital" data-i18n="cat.health">Santé</button>
       </div>
     </div>
     <div class="layer-section" id="recentSection" style="display:none">
-      <h3>Recherches récentes</h3>
+      <h3 data-i18n="explore.recent">Recherches récentes</h3>
       <div id="recentList" class="fav-list"></div>
     </div>
   </section>
 
   <!-- Panneau Itinéraire -->
-  <section class="panel-card" id="panelRoute">
-    <div class="panel-head"><h2>Itinéraire</h2></div>
+  <section class="panel-card" id="panelRoute" role="region" aria-label="Itinéraire">
+    <div class="panel-head"><h2 data-i18n="nav.route">Itinéraire</h2></div>
     <div class="route-modes" id="routeModes">
-      <button class="mode-btn active" data-mode="walk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"/><path d="M15 7l-3 2-2 4 3 2 1 5"/><path d="M10 13l-3 1-1 4"/><path d="M12 9l3 1 2 3"/></svg><span>Piéton</span></button>
-      <button class="mode-btn" data-mode="bike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 17.5L9 9l3-1.5 3 4h3"/></svg><span>Vélo</span></button>
-      <button class="mode-btn" data-mode="car"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/></svg><span>Voiture</span></button>
-      <button class="mode-btn" data-mode="bus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M4 11h16"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></svg><span>Bus</span></button>
+      <button class="mode-btn active" data-mode="walk" aria-label="Piéton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M15 7l-3 2-2 4 3 2 1 5"/><path d="M10 13l-3 1-1 4"/><path d="M12 9l3 1 2 3"/></svg><span data-i18n="mode.walk">Piéton</span></button>
+      <button class="mode-btn" data-mode="bike" aria-label="Vélo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 17.5L9 9l3-1.5 3 4h3"/></svg><span data-i18n="mode.bike">Vélo</span></button>
+      <button class="mode-btn" data-mode="car" aria-label="Voiture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/></svg><span data-i18n="mode.car">Voiture</span></button>
+      <button class="mode-btn" data-mode="bus" aria-label="Bus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M4 11h16"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></svg><span data-i18n="mode.bus">Bus</span></button>
     </div>
-    <div class="route-field"><label>Départ</label><input type="text" id="fromInput" placeholder="Adresse, lieu…" autocomplete="off"><div class="geo-results" id="fromResults"></div></div>
-    <div class="route-field"><label>Arrivée</label><input type="text" id="toInput" placeholder="Adresse, lieu…" autocomplete="off"><div class="geo-results" id="toResults"></div></div>
-    <button class="route-go" id="routeGo">Calculer l'itinéraire</button>
+    <div class="route-field"><label data-i18n="route.from">Départ</label><input type="text" id="fromInput" placeholder="Adresse, lieu…" data-i18n-ph="route.field.ph" autocomplete="off" aria-label="Adresse de départ"><div class="geo-results" id="fromResults"></div></div>
+    <div class="route-field"><label data-i18n="route.to">Arrivée</label><input type="text" id="toInput" placeholder="Adresse, lieu…" data-i18n-ph="route.field.ph" autocomplete="off" aria-label="Adresse d'arrivée"><div class="geo-results" id="toResults"></div></div>
+    <button class="route-go" id="routeGo" data-i18n="route.go">Calculer l'itinéraire</button>
     <div class="route-result" id="routeResult"></div>
     <div class="route-steps" id="routeSteps"></div>
   </section>
 
   <!-- Panneau Favoris -->
-  <section class="panel-card" id="panelSaved">
-    <div class="panel-head"><h2>Favoris</h2></div>
+  <section class="panel-card" id="panelSaved" role="region" aria-label="Favoris">
+    <div class="panel-head"><h2 data-i18n="nav.saved">Favoris</h2></div>
     <div class="layer-section">
-      <h3>Enregistrer un lieu</h3>
+      <h3 data-i18n="fav.stats">Mes statistiques</h3>
+      <div class="stat-grid">
+        <div class="stat-cell"><b id="statDist">0 km</b><span data-i18n="fav.stats.dist">parcourus</span></div>
+        <div class="stat-cell"><b id="statStops">0</b><span data-i18n="fav.stats.stops">arrêts vus</span></div>
+        <div class="stat-cell"><b id="statFav">0</b><span data-i18n="fav.stats.fav">favoris</span></div>
+      </div>
+    </div>
+    <div class="layer-section">
+      <h3 data-i18n="fav.save">Enregistrer un lieu</h3>
       <div class="route-field" style="padding:0">
-        <input type="text" id="favInput" placeholder="Chercher un lieu à enregistrer…" autocomplete="off">
+        <input type="text" id="favInput" placeholder="Chercher un lieu à enregistrer…" data-i18n-ph="fav.save.ph" autocomplete="off" aria-label="Chercher un lieu à enregistrer">
         <div class="geo-results" id="favResults"></div>
       </div>
     </div>
     <div class="layer-section">
-      <h3>Mes lieux enregistrés</h3>
+      <h3 data-i18n="fav.list">Mes lieux enregistrés</h3>
       <div id="favList" class="fav-list"></div>
-    </div>
-    <div class="layer-section">
-      <h3>Mes signalements</h3>
-      <p class="hint">Clique <strong>n'importe où sur la carte</strong> en mode signalement pour marquer un problème.</p>
-      <button class="mini-btn wide" id="reportToggle">Activer le mode signalement</button>
-      <div id="reportList" class="fav-list"></div>
-    </div>
-    <p class="disclaimer">Favoris et signalements sont stockés <strong>uniquement sur ton appareil</strong> (localStorage). Rien n'est envoyé à un serveur : ils ne se perdent pas et restent privés.</p>
-  </section>
-
-  <!-- Panneau Couches -->
-  <section class="panel-card" id="panelLayers">
-    <div class="panel-head"><h2>Couches</h2></div>
-    <div class="layer-section">
-      <h3>Fond de carte</h3>
-      <div class="basemap-grid" id="basemapGrid">
-        <button class="base-btn active" data-base="plan">Plan</button>
-        <button class="base-btn" data-base="satellite">Satellite</button>
-        <button class="base-btn" data-base="relief">Relief</button>
+      <div class="tool-row">
+        <button class="mini-btn" id="favExport" data-i18n="fav.export">Exporter (JSON)</button>
+        <button class="mini-btn" id="favImport" data-i18n="fav.import">Importer</button>
+        <input type="file" id="favFile" accept="application/json,.json" hidden>
       </div>
     </div>
     <div class="layer-section">
-      <h3>Affichage</h3>
-      <label class="toggle-row"><span>Bâtiments 3D</span><input type="checkbox" id="tog3d" checked></label>
-      <label class="toggle-row"><span>Arrêts de bus</span><input type="checkbox" id="togStops"></label>
-      <label class="toggle-row"><span>Lignes de bus</span><input type="checkbox" id="togLines"></label>
-      <label class="toggle-row"><span id="busesLabel">Bus en direct (estimé)</span><input type="checkbox" id="togBuses"></label>
-      <label class="toggle-row"><span>Pistes cyclables</span><input type="checkbox" id="togCycle"></label>
+      <h3 data-i18n="fav.reports">Mes signalements</h3>
+      <p class="hint" data-i18n-html="fav.reports.hint">Clique <strong>n'importe où sur la carte</strong> en mode signalement pour marquer un problème.</p>
+      <button class="mini-btn wide" id="reportToggle" data-i18n="fav.reports.toggle">Activer le mode signalement</button>
+      <div id="reportList" class="fav-list"></div>
+    </div>
+    <p class="disclaimer" data-i18n-html="fav.disclaimer">Favoris et signalements sont stockés <strong>uniquement sur ton appareil</strong> (localStorage). Rien n'est envoyé à un serveur : ils ne se perdent pas et restent privés.</p>
+  </section>
+
+  <!-- Panneau Couches -->
+  <section class="panel-card" id="panelLayers" role="region" aria-label="Couches">
+    <div class="panel-head"><h2 data-i18n="nav.layers">Couches</h2></div>
+    <div class="layer-section">
+      <h3 data-i18n="layers.base">Fond de carte</h3>
+      <div class="basemap-grid" id="basemapGrid">
+        <button class="base-btn active" data-base="plan" data-i18n="layers.base.plan">Plan</button>
+        <button class="base-btn" data-base="satellite" data-i18n="layers.base.sat">Satellite</button>
+        <button class="base-btn" data-base="relief" data-i18n="layers.base.relief">Relief</button>
+      </div>
+    </div>
+    <div class="layer-section">
+      <h3 data-i18n="layers.display">Affichage</h3>
+      <label class="toggle-row"><span data-i18n="layers.b3d">Bâtiments 3D</span><input type="checkbox" id="tog3d" checked></label>
+      <label class="toggle-row"><span data-i18n="layers.stops">Arrêts de bus</span><input type="checkbox" id="togStops"></label>
+      <label class="toggle-row"><span data-i18n="layers.lines">Lignes de bus</span><input type="checkbox" id="togLines"></label>
+      <label class="toggle-row"><span id="busesLabel" data-i18n="layers.buses.est">Bus en direct (estimé)</span><input type="checkbox" id="togBuses"></label>
+      <label class="toggle-row"><span data-i18n="layers.cycle">Pistes cyclables</span><input type="checkbox" id="togCycle"></label>
+      <label class="toggle-row"><span data-i18n="layers.eco">Mode économie d'énergie</span><input type="checkbox" id="togEco"></label>
     </div>
     <div class="layer-section" id="busLineFilter" style="display:none">
-      <h3>Filtrer les lignes</h3>
-      <div class="line-controls"><button class="mini-btn" id="allLines">Tout</button><button class="mini-btn" id="noLines">Aucune</button></div>
+      <h3 data-i18n="layers.filter">Filtrer les lignes</h3>
+      <div class="line-controls"><button class="mini-btn" id="allLines" data-i18n="layers.all">Tout</button><button class="mini-btn" id="noLines" data-i18n="layers.none">Aucune</button></div>
       <div id="lineList" class="line-list"></div>
     </div>
-    <p class="disclaimer">Clique un <strong>arrêt</strong> pour voir les prochains passages en <strong>temps réel</strong> (flux officiel TCAT). Positions des bus = <strong>estimées</strong> des horaires, sauf si le flux publie des positions GPS.</p>
+    <p class="disclaimer" data-i18n-html="layers.disclaimer">Clique un <strong>arrêt</strong> pour voir les prochains passages en <strong>temps réel</strong> (flux officiel TCAT). Positions des bus = <strong>estimées</strong> des horaires, sauf si le flux publie des positions GPS.</p>
   </section>
 
   <!-- Boutons flottants droite -->
@@ -146,19 +170,25 @@
   </button>
 
   <!-- Fiche lieu (bottom sheet) -->
-  <section class="place-card" id="placeCard">
+  <section class="place-card" id="placeCard" role="dialog" aria-label="Fiche du lieu">
     <button class="place-close" id="placeClose" aria-label="Fermer"></button>
-    <div class="place-body">
-      <h3 id="placeName">Lieu</h3>
-      <p id="placeSub" class="place-sub"></p>
-      <p id="placeCoords" class="place-coords"></p>
-    </div>
-    <div class="place-actions">
-      <button class="pa-btn primary" id="paDir"><span class="pa-ico" id="paDirIco"></span><span>Itinéraire</span></button>
-      <button class="pa-btn" id="paFrom"><span class="pa-ico" id="paFromIco"></span><span>Départ</span></button>
-      <button class="pa-btn" id="paSave"><span class="pa-ico" id="paSaveIco"></span><span>Enregistrer</span></button>
-      <button class="pa-btn" id="paShare"><span class="pa-ico" id="paShareIco"></span><span>Partager</span></button>
-      <button class="pa-btn" id="paStreet"><span class="pa-ico" id="paStreetIco"></span><span>Photos rue</span></button>
+    <div class="place-scroll">
+      <div class="place-body">
+        <h3 id="placeName">Lieu</h3>
+        <p id="placeSub" class="place-sub"></p>
+        <p id="placeCoords" class="place-coords"></p>
+      </div>
+      <div class="place-actions">
+        <button class="pa-btn primary" id="paDir"><span class="pa-ico" id="paDirIco" aria-hidden="true"></span><span data-i18n="place.directions">Itinéraire</span></button>
+        <button class="pa-btn" id="paFrom"><span class="pa-ico" id="paFromIco" aria-hidden="true"></span><span data-i18n="place.from">Départ</span></button>
+        <button class="pa-btn" id="paSave"><span class="pa-ico" id="paSaveIco" aria-hidden="true"></span><span data-i18n="place.save">Enregistrer</span></button>
+        <button class="pa-btn" id="paShare"><span class="pa-ico" id="paShareIco" aria-hidden="true"></span><span data-i18n="place.share">Partager</span></button>
+        <button class="pa-btn" id="paStreet"><span class="pa-ico" id="paStreetIco" aria-hidden="true"></span><span data-i18n="place.street">Photos rue</span></button>
+      </div>
+      <div class="place-nearby" id="placeNearby" style="display:none">
+        <h4 data-i18n="place.nearby">Arrêts à proximité</h4>
+        <div id="placeNearbyList"></div>
+      </div>
     </div>
   </section>
 
@@ -184,6 +214,7 @@
 
   <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <script src="config.js?v=13"></script>
+  <script src="i18n.js?v=13"></script>
   <script src="icons.js?v=13"></script>
   <script src="space.js?v=13"></script>
   <script src="store.js?v=13"></script>
@@ -192,5 +223,14 @@
   <script src="realtime.js?v=13"></script>
   <script src="routing.js?v=13"></script>
   <script src="app.js?v=13"></script>
+
+  <!-- PWA : enregistrement du service worker (offline-first) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
