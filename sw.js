@@ -9,7 +9,7 @@
    - Aucune donnée personnelle n'est touchée : favoris et
      signalements restent dans localStorage.
    ============================================================ */
-const VERSION = 'v17';
+const VERSION = 'v19';
 const SHELL_CACHE = 'nexus-shell-' + VERSION;
 const RUNTIME_CACHE = 'nexus-runtime-' + VERSION;
 
@@ -17,17 +17,17 @@ const RUNTIME_CACHE = 'nexus-runtime-' + VERSION;
 const SHELL = [
   './',
   './index.html',
-  './style.css?v=17',
-  './config.js?v=17',
-  './icons.js?v=17',
-  './space.js?v=17',
-  './store.js?v=17',
-  './busengine.js?v=17',
-  './gtfsrt.js?v=17',
-  './realtime.js?v=17',
-  './routing.js?v=17',
-  './app.js?v=17',
-  './i18n.js?v=17',
+  './style.css?v=19',
+  './config.js?v=19',
+  './icons.js?v=19',
+  './space.js?v=19',
+  './store.js?v=19',
+  './busengine.js?v=19',
+  './gtfsrt.js?v=19',
+  './realtime.js?v=19',
+  './routing.js?v=19',
+  './app.js?v=19',
+  './i18n.js?v=19',
   './icon.svg',
   './manifest.json',
 ];

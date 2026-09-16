@@ -628,7 +628,9 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;back
   .place-card{left:8px;right:8px;width:auto;bottom:calc(82px + var(--safe-b));border-radius:22px;max-height:68dvh;transform:translateY(140%)}
   .place-card.open{transform:translateY(0)}
   .nav-guide{left:8px;right:8px;width:auto;top:calc(8px + var(--safe-t))}
-  .map-fab,.compass-btn{right:12px;transition:opacity .2s,transform .2s}.map-fab{bottom:calc(142px + var(--safe-b))}.compass-btn{bottom:calc(90px + var(--safe-b))}
+  /* Les contrôles MapLibre restent en bas ; les actions Nexus se placent
+     au-dessus avec un espace constant pour éviter toute superposition. */
+  .map-fab,.compass-btn{right:12px;transition:opacity .2s,transform .2s}.map-fab{bottom:calc(298px + var(--safe-b))}.compass-btn{bottom:calc(244px + var(--safe-b))}
   body.panel-open .map-fab,body.panel-open .compass-btn,body.place-open .map-fab,body.place-open .compass-btn{opacity:0;pointer-events:none;transform:translateX(18px)}
   .maplibregl-ctrl-bottom-right{bottom:calc(74px + var(--safe-b))}
   .toast{top:calc(14px + var(--safe-t));bottom:auto;max-width:calc(100vw - 28px);text-align:center;transform:translateX(-50%) translateY(-12px)}
