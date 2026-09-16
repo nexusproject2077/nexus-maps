@@ -14,6 +14,12 @@ const NexusI18n = (() => {
   const DICT = {
     fr: {
       'nav.explore': 'Explorer', 'nav.route': 'Itinéraire', 'nav.layers': 'Couches', 'nav.saved': 'Favoris',
+      'status.city': 'Troyes & alentours', 'status.network': 'Réseau TCAT en direct',
+      'explore.eyebrow': 'Découvrir autour de vous', 'explore.intro': 'Trouvez un lieu, un service ou une adresse dans toute la France.',
+      'route.eyebrow': 'Choisir le meilleur trajet', 'saved.eyebrow': 'Votre espace personnel', 'layers.eyebrow': 'Personnaliser la carte',
+      'theme.toLight': 'Activer le thème clair', 'theme.toDark': 'Activer le thème sombre',
+      'lang.toggle': 'Changer de langue', 'panel.close': 'Fermer le panneau', 'search.label': 'Rechercher un lieu',
+      'route.from.label': 'Adresse de départ', 'route.to.label': "Adresse d'arrivée",
       'search.ph': 'Rechercher un lieu, une adresse…',
       'explore.categories': 'Catégories', 'explore.recent': 'Recherches récentes',
       'cat.restaurant': 'Restaurants', 'cat.cafe': 'Cafés', 'cat.groceries': 'Courses', 'cat.pharmacy': 'Pharmacies',
@@ -48,6 +54,12 @@ const NexusI18n = (() => {
     },
     en: {
       'nav.explore': 'Explore', 'nav.route': 'Route', 'nav.layers': 'Layers', 'nav.saved': 'Saved',
+      'status.city': 'Troyes & nearby', 'status.network': 'Live TCAT network',
+      'explore.eyebrow': 'Discover what is nearby', 'explore.intro': 'Find a place, service or address anywhere in France.',
+      'route.eyebrow': 'Choose the best journey', 'saved.eyebrow': 'Your personal space', 'layers.eyebrow': 'Customize the map',
+      'theme.toLight': 'Switch to light theme', 'theme.toDark': 'Switch to dark theme',
+      'lang.toggle': 'Change language', 'panel.close': 'Close panel', 'search.label': 'Search for a place',
+      'route.from.label': 'Starting address', 'route.to.label': 'Destination address',
       'search.ph': 'Search a place, an address…',
       'explore.categories': 'Categories', 'explore.recent': 'Recent searches',
       'cat.restaurant': 'Restaurants', 'cat.cafe': 'Cafés', 'cat.groceries': 'Groceries', 'cat.pharmacy': 'Pharmacies',
@@ -105,6 +117,7 @@ const NexusI18n = (() => {
     root.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
     root.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
     root.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+    root.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
     document.documentElement.setAttribute('lang', lang);
     const btn = document.getElementById('langBtn');
     if (btn) btn.textContent = lang.toUpperCase();

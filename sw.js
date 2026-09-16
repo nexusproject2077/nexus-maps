@@ -9,7 +9,7 @@
    - Aucune donnée personnelle n'est touchée : favoris et
      signalements restent dans localStorage.
    ============================================================ */
-const VERSION = 'v13';
+const VERSION = 'v17';
 const SHELL_CACHE = 'nexus-shell-' + VERSION;
 const RUNTIME_CACHE = 'nexus-runtime-' + VERSION;
 
@@ -17,17 +17,17 @@ const RUNTIME_CACHE = 'nexus-runtime-' + VERSION;
 const SHELL = [
   './',
   './index.html',
-  './style.css',
-  './config.js?v=13',
-  './icons.js?v=13',
-  './space.js?v=13',
-  './store.js?v=13',
-  './busengine.js?v=13',
-  './gtfsrt.js?v=13',
-  './realtime.js?v=13',
-  './routing.js?v=13',
-  './app.js?v=13',
-  './i18n.js?v=13',
+  './style.css?v=17',
+  './config.js?v=17',
+  './icons.js?v=17',
+  './space.js?v=17',
+  './store.js?v=17',
+  './busengine.js?v=17',
+  './gtfsrt.js?v=17',
+  './realtime.js?v=17',
+  './routing.js?v=17',
+  './app.js?v=17',
+  './i18n.js?v=17',
   './icon.svg',
   './manifest.json',
 ];
@@ -66,6 +66,24 @@ self.addEventListener('fetch', (event) => {
   // servis depuis le cache : on laisse le réseau gérer.
   if (/data\.gouv\.fr|corsproxy\.io|allorigins\.win/.test(url.hostname)) return;
 
+  // Les navigations privilégient toujours la dernière version disponible.
+  // Le cache ne sert que de repli hors-ligne, ce qui évite une UI obsolète
+  // après un déploiement du service worker.
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(SHELL_CACHE);
+      try {
+        const fresh = await fetch(req);
+        if (fresh?.ok) cache.put('./index.html', fresh.clone()).catch(() => {});
+        return fresh;
+      } catch {
+        return await cache.match('./index.html') || await cache.match('./') ||
+          new Response('Hors-ligne', { status: 503, statusText: 'Offline' });
+      }
+    })());
+    return;
+  }
+
   // Stale-while-revalidate : réponse immédiate du cache, mise à jour en fond.
   event.respondWith((async () => {
     const cache = await caches.open(sameOrigin ? SHELL_CACHE : RUNTIME_CACHE);
@@ -80,12 +98,6 @@ self.addEventListener('fetch', (event) => {
     if (cached) { network; return cached; }
     const res = await network;
     if (res) return res;
-    // Repli : pour une navigation hors-ligne, sert la page d'accueil.
-    if (req.mode === 'navigate') {
-      const shell = await caches.open(SHELL_CACHE);
-      const home = await shell.match('./index.html') || await shell.match('./');
-      if (home) return home;
-    }
     return new Response('Hors-ligne', { status: 503, statusText: 'Offline' });
   })());
 });

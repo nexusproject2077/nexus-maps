@@ -6,8 +6,8 @@
   "scope": ".",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#04070e",
-  "theme_color": "#00e5ff",
+  "background_color": "#07111f",
+  "theme_color": "#2bd9f5",
   "lang": "fr",
   "categories": ["navigation", "travel", "maps"],
   "icons": [
