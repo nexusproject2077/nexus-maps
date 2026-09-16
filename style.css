@@ -325,6 +325,8 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .rt-early{font-size:11px;color:#6ee7ff;font-weight:600}
 .rt-ontime{font-size:11px;color:#5ad17a;font-weight:600}
 .rt-empty{font-size:12px;color:var(--text-dim);padding:10px 6px}
+.rt-retry{display:block;width:calc(100% - 16px);margin:0 8px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--elev);color:var(--text-dim);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.rt-retry:hover{border-color:var(--cyan-dim);color:var(--cyan)}
 .rt-follow{display:block;width:calc(100% - 16px);margin:3px 8px 8px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--cyan) 50%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--cyan) 12%,var(--elev));color:var(--cyan);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,transform .15s}
 .rt-follow:hover{background:color-mix(in srgb,var(--cyan) 22%,var(--elev));transform:translateY(-1px)}
 .rt-foot{font-size:10px;color:var(--text-faint);padding:7px 13px;border-top:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px}

@@ -787,7 +787,11 @@
     else{
       const now=Date.now();
       const list=NexusRT.arrivals(stopId).filter(a=>a.time*1000>now-30000).slice(0,6);
-      if(!list.length) body=`<div class="rt-empty">${NexusRT.isFresh()?'Aucun passage à venir.':'Temps réel indisponible.'}</div>`;
+      if(!list.length){
+        const unavailable=!NexusRT.isFresh();
+        body=`<div class="rt-empty">${unavailable?'Temps réel indisponible — nouvelle tentative automatique.':'Aucun passage à venir.'}</div>`+
+          (unavailable?'<button class="rt-retry" type="button">Réessayer maintenant</button>':'');
+      }
       else body=list.map(a=>{const rt=NexusBus.routes[a.route]||{};
         return `<div class="rt-row"><span class="rt-badge" style="background:${rt.color||'#888'};color:${rt.text||'#fff'}">${rt.short||a.route||'?'}</span>`+
           `<span class="rt-when">${fmtCountdown(a.time)}</span>${delayBadge(a.delay)}</div>`;}).join('');
@@ -800,8 +804,10 @@
     if(activeStopPopup&&activeStopPopup.popup) activeStopPopup.popup.remove();
     const popup=new maplibregl.Popup({offset:14,maxWidth:'300px',className:'rt-popup'})
       .setLngLat(lngLat).setHTML(arrivalsHTML(stopId,name)).addTo(map);
+    const wireRetry=()=>{const btn=popup.getElement()?.querySelector('.rt-retry');if(btn)btn.onclick=async()=>{btn.disabled=true;await NexusRT.refresh();if(activeStopPopup?.popup===popup&&popup.isOpen()){popup.setHTML(arrivalsHTML(stopId,name));wireRetry();}};};
+    wireRetry();
     popup.on('close',()=>{ if(activeStopPopup&&activeStopPopup.popup===popup) activeStopPopup=null; });
-    activeStopPopup={popup,stopId,name};
+    activeStopPopup={popup,stopId,name,wireRetry};
     if(NexusRT.enabled()&&!NexusRT.isFresh()) NexusRT.refresh();
   }
   map.on('click','bus-stops',(e)=>{
@@ -876,6 +882,7 @@
     if(state.buses && liveBuses()) renderRealVehicles();
     if(activeStopPopup&&activeStopPopup.popup&&activeStopPopup.popup.isOpen())
       activeStopPopup.popup.setHTML(arrivalsHTML(activeStopPopup.stopId,activeStopPopup.name));
+      activeStopPopup.wireRetry?.();
     if(followedVehicleId){
       const v=NexusRT.vehicles().find(x=>String(x.id||x.tripId||'')===String(followedVehicleId));
       if(v){
