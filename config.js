@@ -15,10 +15,12 @@ const NEXUS_CONFIG = {
   // ---- Temps réel TCAT (GTFS-RT) ----
   // Flux officiels : positions GPS (81543) et passages aux arrêts (81544).
   // Les deux flux sont consommés en parallèle puis rafraîchis automatiquement.
-  TCAT_VEHICLE_URL: "https://transport.data.gouv.fr/resources/81543/download",
-  TCAT_TRIP_URL: "https://transport.data.gouv.fr/resources/81544/download",
+  // URLs finales des fichiers (évite la redirection transport.data.gouv.fr
+  // qui bloque certains navigateurs avant même l'essai du relais CORS).
+  TCAT_VEHICLE_URL: "https://www.data.gouv.fr/api/1/datasets/r/98230d13-cccb-4c27-b0bc-d1b9341ca77b",
+  TCAT_TRIP_URL: "https://www.data.gouv.fr/api/1/datasets/r/8dc66569-b744-4d22-95df-f8496e8eddb6",
   // Rétrocompatibilité avec les intégrations qui ne fournissent qu'un flux.
-  TCAT_RT_URL: "https://transport.data.gouv.fr/resources/81544/download",
+  TCAT_RT_URL: "https://www.data.gouv.fr/api/1/datasets/r/8dc66569-b744-4d22-95df-f8496e8eddb6",
   // Si le flux est bloqué par CORS dans le navigateur, mets ici l'URL d'un
   // relais CORS (ex. ton VPS : "https://ton-vps/cors?u="). Le flux sera appelé
   // via PROXY + encodeURIComponent(URL). Laisser vide si le flux autorise CORS.
