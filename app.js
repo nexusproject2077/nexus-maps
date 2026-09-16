@@ -880,9 +880,10 @@
   }
   NexusRT.onUpdate(()=>{
     if(state.buses && liveBuses()) renderRealVehicles();
-    if(activeStopPopup&&activeStopPopup.popup&&activeStopPopup.popup.isOpen())
+    if(activeStopPopup&&activeStopPopup.popup&&activeStopPopup.popup.isOpen()){
       activeStopPopup.popup.setHTML(arrivalsHTML(activeStopPopup.stopId,activeStopPopup.name));
       activeStopPopup.wireRetry?.();
+    }
     if(followedVehicleId){
       const v=NexusRT.vehicles().find(x=>String(x.id||x.tripId||'')===String(followedVehicleId));
       if(v){
