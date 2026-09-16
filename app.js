@@ -51,7 +51,7 @@
   });
 
   let currentBase='plan';
-  const state = { stops:false, lines:false, buses:false, cycle:false, b3d:true };
+  const state = { stops:true, lines:false, buses:false, poi:true, cycle:false, b3d:true };
   let activeRoutes = new Set(Object.keys(NexusBus.routes));
   function mapPalette(){
     const dark=document.documentElement.dataset.theme==='dark';
@@ -119,6 +119,21 @@
           'circle-color':palette.accent,'circle-stroke-color':palette.edge,'circle-stroke-width':1.5,'circle-opacity':0.95}});
     }
 
+    // --- Points d'intérêt OpenStreetMap (chargés par emprise visible) ---
+    if(!map.getSource('nexus-pois')){
+      map.addSource('nexus-pois',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'poi-points',type:'circle',source:'nexus-pois',minzoom:11.5,
+        layout:{visibility:state.poi?'visible':'none'},paint:{
+          'circle-radius':['interpolate',['linear'],['zoom'],11.5,3,15,5,18,7],
+          'circle-color':['match',['get','kind'],
+            'food','#f07858','shop','#e2a93b','transport','#4f9cf5','health','#e45d8e',
+            'leisure','#49bd88','tourism','#a878e8','service','#7b8fa8','#6f8296'],
+          'circle-stroke-color':palette.edge,'circle-stroke-width':1.2,'circle-opacity':.92}});
+      map.addLayer({id:'poi-labels',type:'symbol',source:'nexus-pois',minzoom:14,
+        layout:{visibility:state.poi?'visible':'none','text-field':['get','name'],'text-size':11,'text-offset':[0,1.1],'text-anchor':'top','text-max-width':10},
+        paint:{'text-color':palette.edge==='#fff'?'#173247':'#e6f3f7','text-halo-color':palette.edge==='#fff'?'#fff':'#07111f','text-halo-width':1.2}});
+    }
+
     // --- Pistes cyclables (CyclOSM raster overlay) ---
     if(!map.getSource('cycle')){
       map.addSource('cycle',{type:'raster',
@@ -152,6 +167,8 @@
     set('bus-stops',state.stops);
     set('bus-lines',state.lines);
     set('buses',state.buses);
+    set('poi-points',state.poi);
+    set('poi-labels',state.poi);
     set('cycle',state.cycle);
     if(map.getLayer('nexus-3d-buildings')) map.setLayoutProperty('nexus-3d-buildings','visibility',(currentBase==='plan'&&state.b3d)?'visible':'none');
     // filtre lignes actives
@@ -159,6 +176,70 @@
   }
 
   map.on('load', addDataLayers);
+
+  // ===== POI OpenStreetMap : tous les points utiles de la zone visible =====
+  const POI_ENDPOINTS=[
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter'
+  ];
+  let poiTimer=null, poiController=null, poiRequest=0, poiLastLoad=0;
+  function poiBounds(){
+    const b=map.getBounds(), c=map.getCenter(), z=map.getZoom();
+    if(z<11.5) return null;
+    const maxSpan=Math.min(.34,Math.max(.12,.75/(z-9)));
+    const half=maxSpan/2;
+    return {s:Math.max(-85,Math.max(b.getSouth(),c.lat-half)),w:Math.max(-180,Math.max(b.getWest(),c.lng-half)),
+      n:Math.min(85,Math.min(b.getNorth(),c.lat+half)),e:Math.min(180,Math.min(b.getEast(),c.lng+half))};
+  }
+  function poiKind(tags){
+    if(tags.public_transport||tags.highway==='bus_stop'||tags.railway) return 'transport';
+    if(tags.amenity==='restaurant'||tags.amenity==='cafe'||tags.amenity==='fast_food'||tags.amenity==='bar'||tags.amenity==='pub'||tags.cuisine) return 'food';
+    if(tags.shop||tags.craft) return 'shop';
+    if(tags.healthcare||tags.amenity==='hospital'||tags.amenity==='clinic'||tags.amenity==='pharmacy'||tags.amenity==='doctors'||tags.amenity==='dentist') return 'health';
+    if(tags.tourism||tags.historic) return 'tourism';
+    if(tags.leisure||tags.sport||tags.natural) return 'leisure';
+    return 'service';
+  }
+  function poiQuery(box){
+    const q=`[out:json][timeout:25];(nwr["amenity"](${box.s},${box.w},${box.n},${box.e});nwr["shop"](${box.s},${box.w},${box.n},${box.e});nwr["tourism"](${box.s},${box.w},${box.n},${box.e});nwr["leisure"](${box.s},${box.w},${box.n},${box.e});nwr["public_transport"](${box.s},${box.w},${box.n},${box.e});nwr["healthcare"](${box.s},${box.w},${box.n},${box.e});nwr["historic"](${box.s},${box.w},${box.n},${box.e});nwr["craft"](${box.s},${box.w},${box.n},${box.e});nwr["sport"](${box.s},${box.w},${box.n},${box.e}););out center tags;`;
+    return q;
+  }
+  async function loadPOIs(){
+    const box=poiBounds(), src=map.getSource('nexus-pois');
+    if(!src) return;
+    if(!box){src.setData({type:'FeatureCollection',features:[]});return;}
+    if(poiController) poiController.abort();
+    poiController=new AbortController(); const request=++poiRequest; const query=poiQuery(box);
+    let payload=null;
+    for(const endpoint of POI_ENDPOINTS){
+      try{
+        const res=await fetch(endpoint+'?data='+encodeURIComponent(query),{signal:poiController.signal,headers:{Accept:'application/json'}});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        payload=await res.json(); break;
+      }catch(error){ if(error.name==='AbortError') return; }
+    }
+    if(!payload||request!==poiRequest||!map.getSource('nexus-pois')) return;
+    const seen=new Set(), features=[];
+    for(const el of (payload.elements||[])){
+      const tags=el.tags||{}, name=tags.name||tags.brand||tags.operator||'';
+      const lat=el.lat??el.center?.lat, lon=el.lon??el.center?.lon;
+      if(!Number.isFinite(lat)||!Number.isFinite(lon)) continue;
+      const key=el.type+':'+el.id; if(seen.has(key)) continue; seen.add(key);
+      features.push({type:'Feature',id:key,properties:{name:String(name).slice(0,80),kind:poiKind(tags),category:String(tags.amenity||tags.shop||tags.tourism||tags.leisure||tags.public_transport||tags.healthcare||tags.historic||tags.craft||tags.sport||'POI')},geometry:{type:'Point',coordinates:[lon,lat]}});
+    }
+    map.getSource('nexus-pois').setData({type:'FeatureCollection',features}); poiLastLoad=Date.now();
+  }
+  function schedulePOIs(){clearTimeout(poiTimer);if(!state.poi)return;poiTimer=setTimeout(loadPOIs,650);}
+  map.on('moveend',schedulePOIs);
+  map.on('load',schedulePOIs);
+  setInterval(()=>{if(state.poi && Date.now()-poiLastLoad>240000) loadPOIs();},60000);
+  map.on('click','poi-points',e=>{
+    const p=e.features?.[0]?.properties; if(!p) return;
+    const c=e.lngLat; openPlaceCard({name:p.name||'Point d\'intérêt',sub:p.category||'OpenStreetMap',lat:c.lat,lon:c.lng});
+  });
+  map.on('mouseenter','poi-points',()=>{map.getCanvas().style.cursor='pointer';});
+  map.on('mouseleave','poi-points',()=>{map.getCanvas().style.cursor=reportMode?'crosshair':'';});
 
   // ===== Scène spatiale au dézoom =====
   const spaceEl=document.getElementById('space');
@@ -182,6 +263,7 @@
     map.setStyle(style);
     map.once('styledata', ()=>{ // ré-ajoute nos couches après changement de style
       addDataLayers();
+      schedulePOIs();
     });
   }
 
@@ -205,7 +287,7 @@
     if(!state.buses) return; const src=map.getSource('buses'); if(!src) return;
     const veh=NexusRT.vehicles().filter(v=>!v.routeId || activeRoutes.has(v.routeId));
     src.setData({type:'FeatureCollection',features:veh.map(v=>({type:'Feature',
-      properties:{color:(NexusBus.routes[v.routeId]||{}).color||'#00e5ff'},
+      properties:{id:v.id||v.tripId||'',label:v.label||'',routeId:v.routeId||'',bearing:v.bearing||0,live:true,color:(NexusBus.routes[v.routeId]||{}).color||'#2bd9f5'},
       geometry:{type:'Point',coordinates:[v.lon,v.lat]}}))});
   }
   function animate(now){
@@ -214,7 +296,7 @@
       const buses=NexusBus.activeBuses(simTime, activeRoutes);
       const src=map.getSource('buses');
       if(src) src.setData({type:'FeatureCollection',
-        features:buses.map(b=>({type:'Feature',properties:{color:b.color},geometry:{type:'Point',coordinates:[b.lon,b.lat]}}))});
+        features:buses.map((b,i)=>({type:'Feature',properties:{id:'estimated-'+i,label:'',routeId:b.route||'',estimated:true,color:b.color},geometry:{type:'Point',coordinates:[b.lon,b.lat]}}))});
     }
     lastFrame=now; requestAnimationFrame(animate);
   }
@@ -237,7 +319,13 @@
   $('#tog3d').onchange=e=>{state.b3d=e.target.checked; applyVisibility();};
   $('#togStops').onchange=e=>{state.stops=e.target.checked; applyVisibility();};
   $('#togLines').onchange=e=>{state.lines=e.target.checked; $('#busLineFilter').style.display=e.target.checked?'block':'none'; applyVisibility();};
-  $('#togBuses').onchange=e=>{state.buses=e.target.checked; applyVisibility();};
+  $('#togBuses').onchange=e=>{
+    state.buses=e.target.checked;
+    applyVisibility();
+    if(state.buses && liveBuses()) renderRealVehicles();
+    if(!state.buses && activeVehiclePopup?.popup) activeVehiclePopup.popup.remove();
+  };
+  $('#togPoi').onchange=e=>{state.poi=e.target.checked; applyVisibility(); if(state.poi) schedulePOIs();};
   $('#togCycle').onchange=e=>{state.cycle=e.target.checked; applyVisibility();};
   $$('.base-btn').forEach(b=>b.onclick=()=>{$$('.base-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');switchBase(b.dataset.base);});
 
@@ -283,9 +371,6 @@
     if(currentBase==='plan') switchBase('plan'); else refreshMapPalette();
   });
   syncThemeButton();
-
-  // ===== Boussole =====
-  $('#compassBtn').onclick=()=>map.easeTo({pitch:NEXUS_CONFIG.PITCH,bearing:-15,duration:600});
 
   // ===== Routage =====
   let fromPt=null,toPt=null,currentMode='walk';
@@ -593,7 +678,7 @@
   map.on('click',(e)=>{
     if(reportMode||navActive) return;
     // ne pas ouvrir la fiche si on a cliqué un arrêt ou un bus
-    const rtLayers=['bus-stops','buses'].filter(l=>map.getLayer(l));
+    const rtLayers=['bus-stops','buses','poi-points'].filter(l=>map.getLayer(l));
     if(rtLayers.length && map.queryRenderedFeatures(e.point,{layers:rtLayers}).length) return;
     const lat=e.lngLat.lat, lon=e.lngLat.lng;
     openPlaceCard({name:'Chargement…',sub:'',lat,lon});
@@ -677,6 +762,12 @@
   //  Temps réel TCAT (prochains passages + positions GPS)
   // ============================================================
   let activeStopPopup=null; // {popup, stopId, name}
+  let activeVehiclePopup=null; // {popup, vehicle}
+  let followedVehicleId=null;
+
+  function escapeHTML(value){
+    return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
 
   function fmtCountdown(t){
     const s=Math.round(t-Date.now()/1000);
@@ -720,19 +811,83 @@
   map.on('mouseenter','bus-stops',()=>{map.getCanvas().style.cursor='pointer';});
   map.on('mouseleave','bus-stops',()=>{map.getCanvas().style.cursor= reportMode?'crosshair':'';});
 
+  function vehicleHTML(v){
+    const rt=NexusBus.routes[v.routeId]||{};
+    const id=escapeHTML(v.id||v.tripId||'');
+    const label=escapeHTML(v.label||((rt.short||v.routeId)?'Ligne '+(rt.short||v.routeId):'Bus TCAT'));
+    const line=rt.short||v.routeId||'—';
+    const mode=v.live?'Position GPS en direct':'Position estimée';
+    const follow=v.live?`<button class="rt-follow" type="button" data-vehicle-id="${id}">${followedVehicleId===String(v.id||v.tripId||'')?'Arrêter le suivi':'Suivre ce bus'}</button>`:'';
+    return `<div class="rt-pop"><div class="rt-head">${label}</div><div class="rt-list"><div class="rt-row"><span class="rt-badge" style="background:${escapeHTML(rt.color||v.color||'#2bd9f5')};color:${escapeHTML(rt.text||'#fff')}">${escapeHTML(line)}</span><span class="rt-when">${escapeHTML(mode)}</span></div></div>${follow}<div class="rt-foot">TCAT · actualisation automatique</div></div>`;
+  }
+  function wireVehiclePopup(popup,vehicle){
+    const btn=popup.getElement()?.querySelector('.rt-follow');
+    if(!btn) return;
+    btn.onclick=()=>{
+      const id=String(btn.dataset.vehicleId||'');
+      if(followedVehicleId===id){ followedVehicleId=null; refreshVehiclePopup(); }
+      else { followedVehicleId=id; followVehicle(id); }
+    };
+  }
+  function refreshVehiclePopup(){
+    if(!activeVehiclePopup?.popup?.isOpen()) return;
+    activeVehiclePopup.popup.setHTML(vehicleHTML(activeVehiclePopup.vehicle));
+    wireVehiclePopup(activeVehiclePopup.popup,activeVehiclePopup.vehicle);
+  }
+  function followVehicle(id){
+    const vehicle=NexusRT.vehicles().find(v=>String(v.id||v.tripId||'')===String(id));
+    if(!vehicle) return;
+    if(!state.buses){state.buses=true;const tog=$('#togBuses');if(tog)tog.checked=true;applyVisibility();}
+    map.easeTo({center:[vehicle.lon,vehicle.lat],zoom:Math.max(16,map.getZoom()),duration:650});
+    if(activeVehiclePopup){activeVehiclePopup.vehicle=vehicle;activeVehiclePopup.popup.setLngLat([vehicle.lon,vehicle.lat]);refreshVehiclePopup();}
+  }
+  function showVehiclePopup(vehicle,lngLat){
+    if(activeVehiclePopup?.popup) activeVehiclePopup.popup.remove();
+    const popup=new maplibregl.Popup({offset:14,maxWidth:'300px',className:'rt-popup'})
+      .setLngLat(lngLat).setHTML(vehicleHTML(vehicle)).addTo(map);
+    popup.on('open',()=>wireVehiclePopup(popup,vehicle));
+    popup.on('close',()=>{if(activeVehiclePopup?.popup===popup){activeVehiclePopup=null;followedVehicleId=null;}});
+    activeVehiclePopup={popup,vehicle};
+    wireVehiclePopup(popup,vehicle);
+  }
+  map.on('click','buses',(e)=>{
+    const p=e.features?.[0]?.properties; if(!p) return;
+    const vehicle={...p,id:p.id||'',tripId:p.tripId||'',routeId:p.routeId||'',label:p.label||'',bearing:Number(p.bearing)||0,lat:e.lngLat.lat,lon:e.lngLat.lng,live:p.live===true||p.live==='true',estimated:p.estimated===true||p.estimated==='true',color:p.color};
+    showVehiclePopup(vehicle,e.lngLat);
+  });
+  map.on('mouseenter','buses',()=>{map.getCanvas().style.cursor='pointer';});
+  map.on('mouseleave','buses',()=>{map.getCanvas().style.cursor=reportMode?'crosshair':'';});
+
   function updateBusesLabel(){
     const el=$('#busesLabel'); if(!el) return;
     el.textContent = T(liveBuses() ? 'layers.buses.live' : 'layers.buses.est');
   }
 
   // Démarrage du flux temps réel + réactions aux mises à jour
+  function updateRealtimeStatus(){
+    const el=$('#rtStatus'); if(!el) return;
+    const vehicle=NexusRT.vehicleIsFresh(), trip=NexusRT.tripIsFresh();
+    const offline=!vehicle&&!trip;
+    el.textContent=T(vehicle&&trip?'status.live':(vehicle||trip?'status.partial':'status.offline'));
+    el.classList.toggle('offline',offline);
+    el.closest('.map-status')?.classList.toggle('offline',offline);
+  }
   NexusRT.onUpdate(()=>{
     if(state.buses && liveBuses()) renderRealVehicles();
     if(activeStopPopup&&activeStopPopup.popup&&activeStopPopup.popup.isOpen())
       activeStopPopup.popup.setHTML(arrivalsHTML(activeStopPopup.stopId,activeStopPopup.name));
+    if(followedVehicleId){
+      const v=NexusRT.vehicles().find(x=>String(x.id||x.tripId||'')===String(followedVehicleId));
+      if(v){
+        if(activeVehiclePopup?.popup?.isOpen()){activeVehiclePopup.vehicle=v;activeVehiclePopup.popup.setLngLat([v.lon,v.lat]);refreshVehiclePopup();}
+        map.easeTo({center:[v.lon,v.lat],duration:500});
+      } else { followedVehicleId=null; refreshVehiclePopup(); }
+    }
     updateBusesLabel();
+    updateRealtimeStatus();
   });
   NexusRT.start();
+  updateRealtimeStatus();
 
   // Debug temps réel : nombre de véhicules et d'arrêts avec passages
   NexusRT.onUpdate(()=>{

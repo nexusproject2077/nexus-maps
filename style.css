@@ -136,11 +136,6 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .disclaimer{font-size:11px;line-height:1.5;color:var(--text-faint);padding:14px 16px}
 .disclaimer strong{color:var(--amber)}
 
-/* boussole */
-.compass-btn{position:fixed;bottom:120px;right:10px;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);
-  background:var(--panel-bg);backdrop-filter:blur(10px);color:var(--cyan);cursor:pointer;z-index:900;display:flex;align-items:center;justify-content:center}
-.compass-btn svg{width:20px;height:20px}
-
 /* loader */
 .loader{position:fixed;inset:0;background:#0a0e14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:5000;transition:opacity .5s}
 .loader.gone{opacity:0;pointer-events:none}
@@ -159,7 +154,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
   --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
 }
 .liquid-nav{top:calc(14px + var(--safe-t))}
-.compass-btn,.map-fab{right:calc(10px + var(--safe-r))}
+.map-fab{right:calc(10px + var(--safe-r))}
 
 /* Tablette */
 @media(max-width:1024px){
@@ -194,7 +189,6 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
   /* Cartes flottantes pleines largeur */
   .place-card{left:8px;right:8px;width:auto;bottom:calc(8px + var(--safe-b))}
   .nav-guide{left:8px;right:8px;width:auto;top:calc(8px + var(--safe-t))}
-  .compass-btn{bottom:calc(118px + var(--safe-b))}
   .map-fab{bottom:calc(164px + var(--safe-b))}
 }
 
@@ -209,7 +203,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 /* Écrans bas (paysage mobile) */
 @media(max-height:480px){
   .panel-card{max-height:88vh}
-  .compass-btn,.map-fab{display:none}
+  .map-fab{display:none}
 }
 @media(prefers-reduced-motion:reduce){.active-pill,.panel-card{transition:none}.liquid-nav{backdrop-filter:blur(10px)}}
 
@@ -331,6 +325,8 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
 .rt-early{font-size:11px;color:#6ee7ff;font-weight:600}
 .rt-ontime{font-size:11px;color:#5ad17a;font-weight:600}
 .rt-empty{font-size:12px;color:var(--text-dim);padding:10px 6px}
+.rt-follow{display:block;width:calc(100% - 16px);margin:3px 8px 8px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--cyan) 50%,var(--line));border-radius:9px;background:color-mix(in srgb,var(--cyan) 12%,var(--elev));color:var(--cyan);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,transform .15s}
+.rt-follow:hover{background:color-mix(in srgb,var(--cyan) 22%,var(--elev));transform:translateY(-1px)}
 .rt-foot{font-size:10px;color:var(--text-faint);padding:7px 13px;border-top:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px}
 
 /* ===== Toast ===== */
@@ -343,13 +339,13 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--text);overflow
    Animations & finitions pro
    ============================================================ */
 /* Pression tactile sur les éléments interactifs */
-.nav-btn,.mode-btn,.base-btn,.cat-btn,.mini-btn,.pa-btn,.route-go,.nav-start,.theme-btn,.compass-btn,.map-fab,.fav-del,.place-close,.ng-exit,.search-clear{
+.nav-btn,.mode-btn,.base-btn,.cat-btn,.mini-btn,.pa-btn,.route-go,.nav-start,.theme-btn,.map-fab,.fav-del,.place-close,.ng-exit,.search-clear{
   transition:transform .18s cubic-bezier(.34,1.56,.5,1),color .2s,background .2s,border-color .2s,filter .2s,box-shadow .2s}
-.nav-btn:active,.mode-btn:active,.base-btn:active,.cat-btn:active,.mini-btn:active,.pa-btn:active,.route-go:active,.nav-start:active,.theme-btn:active,.compass-btn:active,.map-fab:active,.fav-del:active,.place-close:active,.ng-exit:active,.search-clear:active{transform:scale(.93)}
+.nav-btn:active,.mode-btn:active,.base-btn:active,.cat-btn:active,.mini-btn:active,.pa-btn:active,.route-go:active,.nav-start:active,.theme-btn:active,.map-fab:active,.fav-del:active,.place-close:active,.ng-exit:active,.search-clear:active{transform:scale(.93)}
 .route-go:hover,.nav-start:hover{transform:translateY(-1px);box-shadow:0 8px 20px -8px var(--cyan)}
 .pa-btn:hover{transform:translateY(-2px)}
 .base-btn:hover,.cat-btn:hover,.mode-btn:hover{transform:translateY(-1px)}
-.compass-btn:hover,.map-fab:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}
+.map-fab:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}
 
 /* Icône active dans la nav : léger ressort */
 .nav-btn svg{transition:transform .35s cubic-bezier(.34,1.56,.5,1)}
@@ -506,7 +502,7 @@ body.power-save #space{display:none!important}
 
 body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(3,10,19,.22),transparent 34%),linear-gradient(180deg,rgba(3,10,19,.14),transparent 28%);mix-blend-mode:multiply}
 [data-theme="light"] body::after{background:linear-gradient(90deg,rgba(230,241,245,.24),transparent 34%),linear-gradient(180deg,rgba(230,241,245,.18),transparent 28%);mix-blend-mode:normal}
-#map,.liquid-nav,.panel-card,.place-card,.nav-guide,.map-fab,.compass-btn,.map-status{isolation:isolate}
+#map,.liquid-nav,.panel-card,.place-card,.nav-guide,.map-fab,.map-status{isolation:isolate}
 
 /* Carte et contrôles natifs */
 .maplibregl-ctrl-group{overflow:hidden;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel-bg)!important;box-shadow:var(--soft-shadow)!important;backdrop-filter:blur(14px)}
@@ -536,6 +532,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;back
 .map-status strong{font-size:12px;line-height:1.2;color:var(--text)}
 .map-status small{font-size:10px;color:var(--text-dim)}
 .status-dot{width:9px;height:9px;border-radius:50%;background:#2dd68f;box-shadow:0 0 0 4px rgba(45,214,143,.12),0 0 16px rgba(45,214,143,.7);animation:statusPulse 2.8s ease-in-out infinite}
+.map-status.offline .status-dot{background:var(--amber);box-shadow:0 0 0 4px rgba(255,182,39,.12),0 0 16px rgba(255,182,39,.55)}
 @keyframes statusPulse{50%{box-shadow:0 0 0 7px rgba(45,214,143,0),0 0 20px rgba(45,214,143,.5)}}
 
 /* Panneaux */
@@ -587,8 +584,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;back
 .place-card{border-radius:22px;padding:19px 20px;background:var(--panel-bg);box-shadow:var(--shadow)}
 .pa-btn{min-height:64px;border-radius:13px;background:var(--elev)}
 .pa-btn.primary{background:linear-gradient(135deg,var(--cyan),color-mix(in srgb,var(--cyan) 78%,#fff))}
-.map-fab,.compass-btn{right:calc(18px + var(--safe-r));width:46px;height:46px;border-radius:14px;box-shadow:var(--soft-shadow);background:var(--panel-bg)}
-.map-fab{bottom:182px}.compass-btn{bottom:128px}
+.map-fab{right:calc(18px + var(--safe-r));width:46px;height:46px;border-radius:14px;box-shadow:var(--soft-shadow);background:var(--panel-bg);bottom:182px}
 .toast{border-radius:12px!important;background:var(--panel-solid)!important;border-color:var(--line)!important;box-shadow:var(--shadow)!important}
 
 /* Chargement */
@@ -630,8 +626,8 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;back
   .nav-guide{left:8px;right:8px;width:auto;top:calc(8px + var(--safe-t))}
   /* Les contrôles MapLibre restent en bas ; les actions Nexus se placent
      au-dessus avec un espace constant pour éviter toute superposition. */
-  .map-fab,.compass-btn{right:12px;transition:opacity .2s,transform .2s}.map-fab{bottom:calc(298px + var(--safe-b))}.compass-btn{bottom:calc(244px + var(--safe-b))}
-  body.panel-open .map-fab,body.panel-open .compass-btn,body.place-open .map-fab,body.place-open .compass-btn{opacity:0;pointer-events:none;transform:translateX(18px)}
+  .map-fab{right:12px;bottom:calc(252px + var(--safe-b));transition:opacity .2s,transform .2s}
+  body.panel-open .map-fab,body.place-open .map-fab{opacity:0;pointer-events:none;transform:translateX(18px)}
   .maplibregl-ctrl-bottom-right{bottom:calc(74px + var(--safe-b))}
   .toast{top:calc(14px + var(--safe-t));bottom:auto;max-width:calc(100vw - 28px);text-align:center;transform:translateX(-50%) translateY(-12px)}
   .toast.show{transform:translateX(-50%) translateY(0)}

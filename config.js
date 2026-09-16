@@ -13,14 +13,17 @@ const NEXUS_CONFIG = {
   GEOCODE_FOCUS: { lat: 48.2973, lon: 4.0744 },
 
   // ---- Temps réel TCAT (GTFS-RT) ----
-  // Flux officiel « Mises à jour des trajets » (transport.data.gouv.fr, ressource 81544).
-  // URL stable de téléchargement ; à confirmer/ajuster depuis :
-  //   https://transport.data.gouv.fr/resources/81544
+  // Flux officiels : positions GPS (81543) et passages aux arrêts (81544).
+  // Les deux flux sont consommés en parallèle puis rafraîchis automatiquement.
+  TCAT_VEHICLE_URL: "https://transport.data.gouv.fr/resources/81543/download",
+  TCAT_TRIP_URL: "https://transport.data.gouv.fr/resources/81544/download",
+  // Rétrocompatibilité avec les intégrations qui ne fournissent qu'un flux.
   TCAT_RT_URL: "https://transport.data.gouv.fr/resources/81544/download",
   // Si le flux est bloqué par CORS dans le navigateur, mets ici l'URL d'un
   // relais CORS (ex. ton VPS : "https://ton-vps/cors?u="). Le flux sera appelé
   // via PROXY + encodeURIComponent(URL). Laisser vide si le flux autorise CORS.
   TCAT_RT_PROXY: "",
-  // Intervalle de rafraîchissement (ms) — plus agressif pour du live
-  TCAT_RT_INTERVAL: 20000,
+  // Intervalle de rafraîchissement (ms) — positions et passages en direct.
+  TCAT_RT_INTERVAL: 15000,
+  TCAT_RT_FRESHNESS: 90000,
 };
